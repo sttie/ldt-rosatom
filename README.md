@@ -1,13 +1,13 @@
 # ldt-rosatom
 
-## Инициализация
+## РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ
 
 ```bash
 git submodule init --recursive
 git submodule update
 ```
 
-## Сборка
+## РЎР±РѕСЂРєР°
 
 ```bash
 cmake -DOPENXLSX_BUILD_TESTS=OFF ..
