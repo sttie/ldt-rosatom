@@ -37,7 +37,6 @@ Ships ParseShipsSchedule(const std::string& dataset_path) {
 
     Ships ships;
     for (size_t row = 2;;++row) {
-        std::cout << "row: " << row << std::endl;
         if (wks.cell("A" + std::to_string(row)).value().type() == OpenXLSX::XLValueType::Empty) {
             break;
         }
@@ -111,6 +110,46 @@ Icebreakers ParseIcebreakers(const std::string& dataset_path) {
     }
 
     return icebreakers;
+}
+
+Graph<double> ParseGraphFromExcel(const std::string& graph_filepath) {
+    OpenXLSX::XLDocument doc{graph_filepath};
+    if (!doc.isOpen()) {
+        throw std::runtime_error("unable to open " + graph_filepath + " file");
+    }
+
+    Icebreakers icebreakers;
+    auto wks = doc.workbook().worksheet(2);
+
+    size_t graph_size = 0;
+    for (size_t row = 2;;++row) {
+        if (wks.cell("A" + std::to_string(row)).value().type() == OpenXLSX::XLValueType::Empty) {
+            break;
+        }
+        
+        ++graph_size;
+    }
+
+    Graph<double> graph{graph_size};
+    for (size_t row = 2; row < graph_size; ++row) {
+        size_t start = wks.cell("B" + std::to_string(row)).value().get<size_t>();
+        size_t end = wks.cell("C" + std::to_string(row)).value().get<size_t>();
+        
+        auto length_cell = wks.cell("D" + std::to_string(row));
+        double length;
+
+        if (length_cell.value().type() == OpenXLSX::XLValueType::Integer) {
+            length = static_cast<double>(length_cell.value().get<int>());
+        } else if (length_cell.value().type() == OpenXLSX::XLValueType::Float) {
+            length = length_cell.value().get<double>();
+        } else {
+            throw std::runtime_error("wtf is the type of knot_speed column (icebreaker)?..");
+        }
+
+        graph.AddEdge(start, end, length);
+    }
+
+    return graph;
 }
 
 }
