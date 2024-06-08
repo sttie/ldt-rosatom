@@ -5,6 +5,7 @@
 #include <OpenXLSX.hpp>
 #include <iostream>
 #include <unordered_map>
+#include <fstream>
 
 namespace parser {
 
@@ -112,7 +113,7 @@ Icebreakers ParseIcebreakers(const std::string& dataset_path) {
     return icebreakers;
 }
 
-Graph<double> ParseGraphFromExcel(const std::string& graph_filepath) {
+Graph ParseGraphFromExcel(const std::string& graph_filepath) {
     OpenXLSX::XLDocument doc{graph_filepath};
     if (!doc.isOpen()) {
         throw std::runtime_error("unable to open " + graph_filepath + " file");
@@ -130,10 +131,10 @@ Graph<double> ParseGraphFromExcel(const std::string& graph_filepath) {
         ++graph_size;
     }
 
-    Graph<double> graph{graph_size};
+    Graph graph;
     for (size_t row = 2; row < graph_size; ++row) {
-        size_t start = wks.cell("B" + std::to_string(row)).value().get<size_t>();
-        size_t end = wks.cell("C" + std::to_string(row)).value().get<size_t>();
+        int start = wks.cell("B" + std::to_string(row)).value().get<int>();
+        int end = wks.cell("C" + std::to_string(row)).value().get<int>();
         
         auto length_cell = wks.cell("D" + std::to_string(row));
         double length;
@@ -146,7 +147,7 @@ Graph<double> ParseGraphFromExcel(const std::string& graph_filepath) {
             throw std::runtime_error("wtf is the type of knot_speed column (icebreaker)?..");
         }
 
-        graph.AddEdge(start, end, length);
+        boost::add_edge(start, end, length, graph);
     }
 
     return graph;
