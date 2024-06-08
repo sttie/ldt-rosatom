@@ -11,7 +11,7 @@ int main() {
         SetConsoleOutputCP(65001);
     #endif
     
-    auto ships = parser::ParseShipsSchedule("C:\\Users\\sarutiunian\\Desktop\\work\\ldt-rosatom\\dataset\\Расписание движения судов.xlsx");
+    auto ships = parser::ParseShipsSchedule("../dataset/Расписание движения судов.xlsx");
     for (auto& ship : ships) {
         std::cout << ship.name << ": ice_class=" << static_cast<int>(ship.ice_class)
                   << ", knot_speed=" << ship.knot_speed
@@ -21,7 +21,7 @@ int main() {
                   << "\n" << std::endl;
     }
 
-    auto icebreakers = parser::ParseIcebreakers("C:\\Users\\sarutiunian\\Desktop\\work\\ldt-rosatom\\dataset\\Расписание движения судов.xlsx");
+    auto icebreakers = parser::ParseIcebreakers("../dataset/Расписание движения судов.xlsx");
     for (auto& icebreaker : icebreakers) {
         std::cout << icebreaker.name << ": "
                   << "ice_class=" << static_cast<int>(icebreaker.ice_class)
@@ -29,6 +29,9 @@ int main() {
                   << ", departure=" << icebreaker.departure
                   << "\n" << std::endl;
     }
+
+    auto graph = parser::ParseGraphFromExcel("../dataset/ГрафДанные.xlsx");
+    graph.Print();
 
     return 0;
 }
