@@ -26,8 +26,11 @@ std::unordered_map<std::string, int> month_to_index = {
 };
 
 }
+VertID getVertID(const std::string &str) {
+    return 0; //TODO
+}
 
-Ships ParseShipsSchedule(const std::string& dataset_path) {
+Ships ParseShipsSchedule(const std::string& dataset_path, int start_id) {
     OpenXLSX::XLDocument doc{dataset_path};
     if (!doc.isOpen()) {
         throw std::runtime_error("unable to open " + dataset_path + " file");
@@ -35,6 +38,7 @@ Ships ParseShipsSchedule(const std::string& dataset_path) {
     
     auto wks = doc.workbook().worksheet(1);
 
+    int index = start_id;
     Ships ships;
     for (size_t row = 2;;++row) {
         if (wks.cell("A" + std::to_string(row)).value().type() == OpenXLSX::XLValueType::Empty) {
@@ -47,15 +51,15 @@ Ships ParseShipsSchedule(const std::string& dataset_path) {
 
         auto knot_speed_cell = wks.cell("C" + std::to_string(row));
         if (knot_speed_cell.value().type() == OpenXLSX::XLValueType::Integer) {
-            ship.knot_speed = static_cast<double>(knot_speed_cell.value().get<int>());
+            ship.knot_speed = static_cast<float>(knot_speed_cell.value().get<int>());
         } else if (knot_speed_cell.value().type() == OpenXLSX::XLValueType::Float) {
-            ship.knot_speed = knot_speed_cell.value().get<double>();
+            ship.knot_speed = knot_speed_cell.value().get<float>();
         } else {
             throw std::runtime_error("wtf is the type of knot_speed column (ship)?..");
         }
 
-        ship.departure = wks.cell("D" + std::to_string(row)).value().getString();
-        ship.destination = wks.cell("E" + std::to_string(row)).value().getString();
+        ship.cur_pos = getVertID(wks.cell("D" + std::to_string(row)).value().getString());
+        ship.finish = getVertID(wks.cell("E" + std::to_string(row)).value().getString());
         ship.voyage_start_date = wks.cell("F" + std::to_string(row)).value().get<int>();
 
         // char weekday_str[20], month_str[20]; int monthday = -1, year = -1;
@@ -71,13 +75,16 @@ Ships ParseShipsSchedule(const std::string& dataset_path) {
         // tm.tm_isdst = -1; // Use DST value from local time zone
         // auto voyage_start_tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
         
+        ship.id = index;
+        index += 1;
+        
         ships.push_back(std::move(ship));
     }
 
     return ships;
 }
 
-Icebreakers ParseIcebreakers(const std::string& dataset_path) {
+Icebreakers ParseIcebreakers(const std::string& dataset_path, int &after_last_id) {
     OpenXLSX::XLDocument doc{dataset_path};
     if (!doc.isOpen()) {
         throw std::runtime_error("unable to open " + dataset_path + " file");
@@ -85,6 +92,8 @@ Icebreakers ParseIcebreakers(const std::string& dataset_path) {
 
     Icebreakers icebreakers;
     auto wks = doc.workbook().worksheet(1);
+    
+    int index = 0;
 
     for (size_t row = 47;;++row) {
         if (wks.cell("C" + std::to_string(row)).value().type() == OpenXLSX::XLValueType::Empty) {
@@ -96,23 +105,30 @@ Icebreakers ParseIcebreakers(const std::string& dataset_path) {
         
         auto knot_speed_cell = wks.cell("D" + std::to_string(row));
         if (knot_speed_cell.value().type() == OpenXLSX::XLValueType::Integer) {
-            icebreaker.knot_speed = static_cast<double>(knot_speed_cell.value().get<int>());
+            icebreaker.knot_speed = static_cast<float>(knot_speed_cell.value().get<int>());
         } else if (knot_speed_cell.value().type() == OpenXLSX::XLValueType::Float) {
-            icebreaker.knot_speed = knot_speed_cell.value().get<double>();
+            icebreaker.knot_speed = knot_speed_cell.value().get<float>();
         } else {
             throw std::runtime_error("wtf is the type of knot_speed column (icebreaker)?..");
         }
 
         icebreaker.ice_class = FromStringToIceClass(wks.cell("E" + std::to_string(row)).value().getString());
-        icebreaker.departure = wks.cell("F" + std::to_string(row)).value().getString();
+        icebreaker.cur_pos = getVertID(wks.cell("F" + std::to_string(row)).value().getString());
+
+        
+        icebreaker.id = index;
+        icebreaker.caravan = {icebreaker.id};
+        index += 1;
 
         icebreakers.push_back(std::move(icebreaker));
     }
+    
+    after_last_id = index;
 
     return icebreakers;
 }
 
-Graph<double> ParseGraphFromExcel(const std::string& graph_filepath) {
+Graph<float> ParseGraphFromExcel(const std::string& graph_filepath) {
     OpenXLSX::XLDocument doc{graph_filepath};
     if (!doc.isOpen()) {
         throw std::runtime_error("unable to open " + graph_filepath + " file");
@@ -130,18 +146,18 @@ Graph<double> ParseGraphFromExcel(const std::string& graph_filepath) {
         ++graph_size;
     }
 
-    Graph<double> graph{graph_size};
+    Graph<float> graph{graph_size};
     for (size_t row = 2; row < graph_size; ++row) {
         size_t start = wks.cell("B" + std::to_string(row)).value().get<size_t>();
         size_t end = wks.cell("C" + std::to_string(row)).value().get<size_t>();
         
         auto length_cell = wks.cell("D" + std::to_string(row));
-        double length;
+        float length;
 
         if (length_cell.value().type() == OpenXLSX::XLValueType::Integer) {
-            length = static_cast<double>(length_cell.value().get<int>());
+            length = static_cast<float>(length_cell.value().get<int>());
         } else if (length_cell.value().type() == OpenXLSX::XLValueType::Float) {
-            length = length_cell.value().get<double>();
+            length = length_cell.value().get<float>();
         } else {
             throw std::runtime_error("wtf is the type of knot_speed column (icebreaker)?..");
         }

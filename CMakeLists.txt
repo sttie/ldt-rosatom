@@ -6,7 +6,12 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_subdirectory(third-party/OpenXLSX)
 
-add_executable(scheduler main.cpp src/parser.cpp src/graph/graph.cpp)
+add_executable(scheduler
+    main.cpp
+    src/parser.cpp
+    src/graph/graph.cpp
+    src/algos/greedy.cpp
+)
 
 target_include_directories(scheduler PUBLIC src)
 target_link_libraries(scheduler OpenXLSX::OpenXLSX)

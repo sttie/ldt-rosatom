@@ -7,12 +7,9 @@
 
 namespace parser {
 
-using Ships = std::vector<Ship>;
-using Icebreakers = std::vector<Icebreaker>;
+Icebreakers ParseIcebreakers(const std::string& dataset_path, int &after_last_id);
+Ships ParseShipsSchedule(const std::string& dataset_path, int start_id);
 
-Ships ParseShipsSchedule(const std::string& dataset_path);
-Icebreakers ParseIcebreakers(const std::string& dataset_path);
-
-Graph<double> ParseGraphFromExcel(const std::string& graph_filepath);
+Graph<float> ParseGraphFromExcel(const std::string& graph_filepath);
 
 }
