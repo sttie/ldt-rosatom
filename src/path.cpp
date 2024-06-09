@@ -48,6 +48,10 @@ Voyage PathManager::sail2point(const Icebreaker &icebreaker, VertID point, Date 
                                      GetMinimalSpeedInCaravan(icebreaker.caravan);
     voyage.end_point = next_vertex;
 
+    icebreaker_to_voyage[icebreaker.id] = voyage;
+    for (auto &ship_id: icebreaker.caravan.ships_id)
+        ship_to_voyage[ship_id] = voyage;
+
     return voyage;
 }
 
@@ -60,7 +64,11 @@ Voyage PathManager::sail2depots(const Icebreaker &icebreaker, Date current_time)
 
     // тут должно быть оптимальное построение пути по всем точкам (задача коммивояжера), но пока здесь путь до первой попавшейся
     if (!all_caravan_end_points.empty()) {
-        return sail2point(icebreaker, all_caravan_end_points.front(), current_time);
+        auto res = sail2point(icebreaker, all_caravan_end_points.front(), current_time);
+        icebreaker_to_voyage[icebreaker.id] = res;
+        for (auto &ship_id: icebreaker.caravan.ships_id)
+            ship_to_voyage[ship_id] = res;
+        return res;
     }
     return {};
 }
