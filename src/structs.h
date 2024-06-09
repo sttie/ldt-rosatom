@@ -6,7 +6,7 @@
 #include <ctime>
 #include <unordered_map>
 
-#include "graph/graph.h"
+#include "graph.h"
 
 // Input data types
 
@@ -77,17 +77,17 @@ using Icebreakers = std::vector<Icebreaker>;
 
 typedef std::vector<VertID> Path; // set of vertices
 typedef std::vector<std::vector<Path>> Routes; // matrix of full path between every pair of vertices
-typedef Graph<float> PathGraph;
 
 
 class PathManager {
 private:
-    PathGraph graph;
+    Graph graph;
     IceGrid ice_grid;
     Routes routes;
     std::unordered_map<BoatID, Voyage> current_voyage;
+
 public:
-    PathManager(PathGraph &graph, IceGrid &ice_grid) :
+    PathManager(Graph &graph, IceGrid &ice_grid) :
         graph(std::move(graph)), ice_grid(std::move(ice_grid)) // или как там хз
     {
         // TODO: weight edges + floyd to fill routes

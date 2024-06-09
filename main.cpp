@@ -16,7 +16,7 @@ int main() {
     
     /** Parsing input data **/
 
-    auto icebreakers = parser::ParseIcebreakers("/mnt/c/Work/Projects/ldt-rosatom/dataset/Расписание движения судов.xlsx", index);
+    auto icebreakers = parser::ParseIcebreakers("../dataset/Расписание движения судов.xlsx", index);
     for (auto& icebreaker : icebreakers) {
         std::cout << icebreaker.id << " "
                   << icebreaker.name << ": "
@@ -26,7 +26,7 @@ int main() {
                   << "\n" << std::endl;
     }
 
-    auto ships = parser::ParseShipsSchedule("/mnt/c/Work/Projects/ldt-rosatom/dataset/Расписание движения судов.xlsx", index);
+    auto ships = parser::ParseShipsSchedule("../dataset/Расписание движения судов.xlsx", index);
     for (auto& ship : ships) {
         std::cout << ship.id << " "
                   << ship.name << ": ice_class=" << static_cast<int>(ship.ice_class)
@@ -37,8 +37,7 @@ int main() {
                   << "\n" << std::endl;
     }
 
-    PathGraph graph = parser::ParseGraphFromExcel("../dataset/ГрафДанные.xlsx");
-    graph.Print();
+    Graph graph = parser::ParseGraphFromExcel("../dataset/ГрафДанные.xlsx");
 
     // парсить сетку
     IceGrid ice_grid; // = ... TODO
@@ -47,7 +46,7 @@ int main() {
 
     /** Алгоритм **/
     PathManager pm(graph, ice_grid);
-    // Schedule res = algos::greedy(ships, icebreakers, pm);
+    Schedule res = algos::greedy(ships, icebreakers, pm);
 
     return 0;
 }

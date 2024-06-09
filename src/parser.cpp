@@ -128,7 +128,7 @@ Icebreakers ParseIcebreakers(const std::string& dataset_path, int &after_last_id
     return icebreakers;
 }
 
-Graph<float> ParseGraphFromExcel(const std::string& graph_filepath) {
+Graph ParseGraphFromExcel(const std::string& graph_filepath) {
     OpenXLSX::XLDocument doc{graph_filepath};
     if (!doc.isOpen()) {
         throw std::runtime_error("unable to open " + graph_filepath + " file");
@@ -146,7 +146,7 @@ Graph<float> ParseGraphFromExcel(const std::string& graph_filepath) {
         ++graph_size;
     }
 
-    Graph<float> graph{graph_size};
+    Graph graph;
     for (size_t row = 2; row < graph_size; ++row) {
         size_t start = wks.cell("B" + std::to_string(row)).value().get<size_t>();
         size_t end = wks.cell("C" + std::to_string(row)).value().get<size_t>();
@@ -162,7 +162,7 @@ Graph<float> ParseGraphFromExcel(const std::string& graph_filepath) {
             throw std::runtime_error("wtf is the type of knot_speed column (icebreaker)?..");
         }
 
-        graph.AddEdge(start, end, length);
+        boost::add_edge(start, end, length, graph);
     }
 
     return graph;

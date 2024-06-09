@@ -9,9 +9,10 @@ add_subdirectory(third-party/OpenXLSX)
 add_executable(scheduler
     main.cpp
     src/parser.cpp
-    src/graph/graph.cpp
     src/algos/greedy.cpp
 )
 
 target_include_directories(scheduler PUBLIC src)
+target_include_directories(scheduler PUBLIC third-party/boost)
+target_include_directories(scheduler PUBLIC third-party/boost/graph/include)
 target_link_libraries(scheduler OpenXLSX::OpenXLSX)

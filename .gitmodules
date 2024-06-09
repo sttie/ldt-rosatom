@@ -1,3 +1,6 @@
 [submodule "third-party/OpenXLSX"]
 	path = third-party/OpenXLSX
 	url = https://github.com/troldal/OpenXLSX.git
+[submodule "third-party/boost/graph"]
+	path = third-party/boost/graph
+	url = https://github.com/boostorg/graph.git
