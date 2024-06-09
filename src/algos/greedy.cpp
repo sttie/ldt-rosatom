@@ -48,7 +48,7 @@ float weightIcebreaker(const Icebreaker &icebreaker, const PathManager &pm, cons
     return dist_coef; // TODO
 }
 
-const int score_threshold = 0.5;
+const double score_threshold = 0.5;
 
 Schedule algos::greedy(PathManager &manager) {
     Ships &ships = *manager.ships;
