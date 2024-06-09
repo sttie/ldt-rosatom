@@ -5,8 +5,8 @@
 #include <stdexcept>
 #include <ctime>
 #include <unordered_map>
-
-#include "graph/graph.h"
+#include <memory>
+#include <set>
 
 // Input data types
 
@@ -38,8 +38,6 @@ inline IceClass FromStringToIceClass(const std::string& ice_class_str) {
 
 using Date = time_t;
 
-typedef std::vector<std::vector<float>> IceGrid;
-
 typedef uint32_t VertID; // id of vertex in graph
 
 struct Voyage { // path between 2 vertices
@@ -49,14 +47,16 @@ struct Voyage { // path between 2 vertices
 
 typedef uint32_t BoatID;
 
-typedef std::vector<std::pair<std::vector<BoatID>, Voyage>> Schedule; // result of algorithm - caravan + path
+typedef std::set<BoatID> Caravan;
+
+typedef std::vector<std::pair<Caravan, Voyage>> Schedule; // result of algorithm - caravan + path
 
 // Boat types
 
 struct BoatInfo {
     BoatID id;
     std::string name;
-    float knot_speed; // on clean water!
+    double knot_speed; // on clean water!
     IceClass ice_class;
     VertID cur_pos;
 };
@@ -67,43 +67,13 @@ struct Ship: public BoatInfo {
 };
 
 struct Icebreaker: public BoatInfo {
-    std::vector<BoatID> caravan;
+    Caravan caravan;
+    BoatID to_pickup = 0;
 };
 
 using Ships = std::vector<Ship>;
+using ShipsPtr = std::shared_ptr<Ships>;
 using Icebreakers = std::vector<Icebreaker>;
+using IcebreakersPtr = std::shared_ptr<Icebreakers>;
 
-// Path types
-
-typedef std::vector<VertID> Path; // set of vertices
-typedef std::vector<std::vector<Path>> Routes; // matrix of full path between every pair of vertices
-typedef Graph<float> PathGraph;
-
-
-class PathManager {
-private:
-    PathGraph graph;
-    IceGrid ice_grid;
-    Routes routes;
-    std::unordered_map<BoatID, Voyage> current_voyage;
-public:
-    PathManager(PathGraph &graph, IceGrid &ice_grid) :
-        graph(std::move(graph)), ice_grid(std::move(ice_grid)) // или как там хз
-    {
-        // TODO: weight edges + floyd to fill routes
-    }
-    // build path to point, return next step, update current_route for all boats in caravan
-    Voyage sail2point(Icebreaker &icebreaker, VertID point) {
-        return {}; // TODO
-    }
-    // build path to all icebreaker's caravan final points, return next step, update current_route
-    Voyage sail2depots(Icebreaker &icebreaker) {
-        return {}; // TODO
-    }
-    Voyage getCurrentVoyage(BoatID boat) {
-        if (current_voyage.count(boat))
-            return current_voyage[boat];
-        return {};
-    }
-};
-
+using IceGrid = std::vector<std::vector<double>>;
