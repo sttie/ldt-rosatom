@@ -3,6 +3,7 @@
 #include <set>
 #include <map>
 #include <queue>
+#include <iostream>
 
 using WeightedBoats = std::map<BoatID, float, std::greater<float>>;
 
@@ -47,7 +48,7 @@ float weightIcebreaker(const Icebreaker &icebreaker, const PathManager &pm, cons
     return dist_coef; // TODO
 }
 
-const int score_threshold = 50;
+const int score_threshold = 0.5;
 
 Schedule algos::greedy(PathManager &manager) {
     Ships &ships = *manager.ships;
@@ -55,7 +56,11 @@ Schedule algos::greedy(PathManager &manager) {
 
     Schedule res;
     std::priority_queue<Date, std::vector<Date>, std::less<Date>> timestamps;
-    timestamps.push(0); // TODO: get first timestamp from IntegrVelocity?
+    for (const auto& ship : ships) {
+        // timestamps.push(0); // TODO: get first timestamp from IntegrVelocity?
+        std::cout << "voyage_start_date: " << ship.voyage_start_date << std::endl;
+        timestamps.push(ship.voyage_start_date);
+    }
 
     WeightedBoats ships_waiting; // not arrived to depot: waiting + in travel
     std::set<BoatID> ships_in_caravans;

@@ -51,6 +51,19 @@ typedef std::set<BoatID> Caravan;
 
 typedef std::vector<std::pair<Caravan, Voyage>> Schedule; // result of algorithm - caravan + path
 
+inline std::string CaravanToString(const Caravan& caravan) {
+    std::string caravan_str = "{";
+    for (auto it = caravan.begin(); it != caravan.end(); ++it) {
+        caravan_str += std::to_string(*it);
+        if (it != std::prev(caravan.end())) {
+            caravan_str += ", ";
+        }
+    }
+    caravan_str += "}";
+
+    return caravan_str;
+}
+
 // Boat types
 
 struct BoatInfo {

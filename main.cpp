@@ -30,7 +30,7 @@ int main() {
     
     /** Parsing input data **/
 
-    auto icebreakers = parser::ParseIcebreakers("../dataset/Расписание движения судов.xlsx", index);
+    auto icebreakers = parser::ParseIcebreakers("../dataset/ScheduleTest.xlsx", index);
     for (auto& icebreaker : *icebreakers) {
         std::cout << icebreaker.id << " "
                   << icebreaker.name << ": "
@@ -40,7 +40,7 @@ int main() {
                   << "\n" << std::endl;
     }
 
-    auto ships = parser::ParseShipsSchedule("../dataset/Расписание движения судов.xlsx", index);
+    auto ships = parser::ParseShipsSchedule("../dataset/ScheduleTest.xlsx", index);
     for (auto& ship : *ships) {
         std::cout << ship.id << " "
                   << ship.name << ": ice_class=" << static_cast<int>(ship.ice_class)
@@ -74,6 +74,12 @@ int main() {
     /** Алгоритм **/
     PathManager pm(graph, icebreakers, ships);
     Schedule res = algos::greedy(pm);
+
+    std::cout << "schedule size: " << res.size() << std::endl;
+    for (const auto& [caravan, voyage] : res) {
+        auto start = voyage.start_point, end = voyage.end_point;
+        std::cout << CaravanToString(caravan) << ": " << start << " -> " << end << std::endl;
+    }
 
     return 0;
 }
