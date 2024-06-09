@@ -26,13 +26,11 @@ int main() {
         SetConsoleOutputCP(65001);
     #endif
     
- int index = 0;
-    
     /** Parsing input data **/
 
-    auto icebreakers = parser::ParseIcebreakers("../dataset/ScheduleTest.xlsx", index);
+    auto icebreakers = parser::ParseIcebreakers("../dataset/ScheduleTest.xlsx");
     for (auto& icebreaker : *icebreakers) {
-        std::cout << icebreaker.id << " "
+        std::cout << icebreaker.id.id << " "
                   << icebreaker.name << ": "
                   << "ice_class=" << static_cast<int>(icebreaker.ice_class)
                   << ", knot_speed=" << icebreaker.knot_speed
@@ -40,9 +38,9 @@ int main() {
                   << "\n" << std::endl;
     }
 
-    auto ships = parser::ParseShipsSchedule("../dataset/ScheduleTest.xlsx", index);
+    auto ships = parser::ParseShipsSchedule("../dataset/ScheduleTest.xlsx");
     for (auto& ship : *ships) {
-        std::cout << ship.id << " "
+        std::cout << ship.id.id << " "
                   << ship.name << ": ice_class=" << static_cast<int>(ship.ice_class)
                   << ", knot_speed=" << ship.knot_speed
                   << ", departure=" << ship.cur_pos

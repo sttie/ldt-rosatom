@@ -31,7 +31,7 @@ VertID getVertID(const std::string &str) {
     return 0; //TODO
 }
 
-ShipsPtr ParseShipsSchedule(const std::string& dataset_path, int start_id) {
+ShipsPtr ParseShipsSchedule(const std::string& dataset_path) {
     OpenXLSX::XLDocument doc{dataset_path};
     if (!doc.isOpen()) {
         throw std::runtime_error("unable to open " + dataset_path + " file");
@@ -39,7 +39,7 @@ ShipsPtr ParseShipsSchedule(const std::string& dataset_path, int start_id) {
     
     auto wks = doc.workbook().worksheet(1);
 
-    int index = start_id;
+    size_t index = 0;
     auto ships = std::make_shared<Ships>();
     for (size_t row = 2;;++row) {
         if (wks.cell("A" + std::to_string(row)).value().type() == OpenXLSX::XLValueType::Empty) {
@@ -76,8 +76,7 @@ ShipsPtr ParseShipsSchedule(const std::string& dataset_path, int start_id) {
         // tm.tm_isdst = -1; // Use DST value from local time zone
         // auto voyage_start_tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
         
-        ship.id = index;
-        index += 1;
+        ship.id = ShipId{index++};
         
         ships->push_back(std::move(ship));
     }
@@ -85,7 +84,7 @@ ShipsPtr ParseShipsSchedule(const std::string& dataset_path, int start_id) {
     return ships;
 }
 
-IcebreakersPtr ParseIcebreakers(const std::string& dataset_path, int &after_last_id) {
+IcebreakersPtr ParseIcebreakers(const std::string& dataset_path) {
     OpenXLSX::XLDocument doc{dataset_path};
     if (!doc.isOpen()) {
         throw std::runtime_error("unable to open " + dataset_path + " file");
@@ -94,7 +93,7 @@ IcebreakersPtr ParseIcebreakers(const std::string& dataset_path, int &after_last
     auto icebreakers = std::make_shared<Icebreakers>();
     auto wks = doc.workbook().worksheet(1);
     
-    int index = 0;
+    size_t index = 0;
 
     for (size_t row = 47;;++row) {
         if (wks.cell("C" + std::to_string(row)).value().type() == OpenXLSX::XLValueType::Empty) {
@@ -116,15 +115,11 @@ IcebreakersPtr ParseIcebreakers(const std::string& dataset_path, int &after_last
         icebreaker.ice_class = FromStringToIceClass(wks.cell("E" + std::to_string(row)).value().getString());
         icebreaker.cur_pos = getVertID(wks.cell("F" + std::to_string(row)).value().getString());
 
-        
-        icebreaker.id = index;
-        icebreaker.caravan = {icebreaker.id};
-        index += 1;
+        icebreaker.id = IcebreakerId{index++};
+        icebreaker.caravan = Caravan{{}, icebreaker.id};
 
         icebreakers->push_back(std::move(icebreaker));
     }
-    
-    after_last_id = index;
 
     return icebreakers;
 }

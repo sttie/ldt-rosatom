@@ -7,8 +7,8 @@
 
 namespace parser {
 
-IcebreakersPtr ParseIcebreakers(const std::string& dataset_path, int &after_last_id);
-ShipsPtr ParseShipsSchedule(const std::string& dataset_path, int start_id);
+IcebreakersPtr ParseIcebreakers(const std::string& dataset_path);
+ShipsPtr ParseShipsSchedule(const std::string& dataset_path);
 
 Graph ParseGraphFromExcel(const std::string& graph_filepath);
 

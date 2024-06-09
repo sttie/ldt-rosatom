@@ -38,24 +38,24 @@ PathManager::PathManager(Graph graph, std::shared_ptr<Icebreakers> icebreakers, 
 }
 
 // build path to point, return next step
-Voyage PathManager::sail2point(Icebreaker &icebreaker, VertID point, Date current_time) {
+Voyage PathManager::sail2point(const Icebreaker &icebreaker, VertID point, Date current_time) {
     auto next_vertex = GetNextVertexInShortestPath(icebreaker.cur_pos, point);
     
     Voyage voyage;
     voyage.start_time = current_time;
     voyage.start_point = icebreaker.cur_pos;
     voyage.end_time = current_time + GetEdgeWeight(graph, icebreaker.cur_pos, next_vertex) /
-                                     GetMinimalSpeedInCaravan(icebreaker, icebreaker.caravan);
+                                     GetMinimalSpeedInCaravan(icebreaker.caravan);
     voyage.end_point = next_vertex;
 
     return voyage;
 }
 
 // build path to all icebreaker's caravan final points, return next step
-Voyage PathManager::sail2depots(Icebreaker &icebreaker, Date current_time) {
+Voyage PathManager::sail2depots(const Icebreaker &icebreaker, Date current_time) {
     std::vector<VertID> all_caravan_end_points;
-    for (auto ship_id : icebreaker.caravan) {
-        all_caravan_end_points.push_back((*ships)[ship_id].finish);
+    for (auto ship_id : icebreaker.caravan.ships_id) {
+        all_caravan_end_points.push_back((*ships)[ship_id.id].finish);
     }
 
     // тут должно быть оптимальное построение пути по всем точкам (задача коммивояжера), но пока здесь путь до первой попавшейся
@@ -65,9 +65,15 @@ Voyage PathManager::sail2depots(Icebreaker &icebreaker, Date current_time) {
     return {};
 }
 
-Voyage PathManager::getCurrentVoyage(BoatID boat) {
-    if (current_voyage.count(boat))
-        return current_voyage[boat];
+Voyage PathManager::getCurrentVoyage(ShipId ship_id) {
+    if (ship_to_voyage.count(ship_id))
+        return ship_to_voyage[ship_id];
+    return {};
+}
+
+Voyage PathManager::getCurrentVoyage(IcebreakerId icebreaker_id) {
+    if (icebreaker_to_voyage.count(icebreaker_id))
+        return icebreaker_to_voyage[icebreaker_id];
     return {};
 }
 
@@ -92,10 +98,10 @@ VertID PathManager::GetNextVertexInShortestPath(VertID current, VertID end) cons
     return optimal_neighbour;
 }
 
-double PathManager::GetMinimalSpeedInCaravan(const Icebreaker& icebreaker, const std::set<BoatID>& caravan) const {
-    double min_speed = icebreaker.knot_speed;
-    for (auto ship_id : caravan) {
-        min_speed = std::min(min_speed, (*ships)[ship_id].knot_speed);
+double PathManager::GetMinimalSpeedInCaravan(const Caravan& caravan) const {
+    double min_speed = (*icebreakers)[caravan.icebreaker_id.id].knot_speed;
+    for (auto ship_id : caravan.ships_id) {
+        min_speed = std::min(min_speed, (*ships)[ship_id.id].knot_speed);
     }
 
     return min_speed;

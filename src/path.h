@@ -32,7 +32,9 @@ class PathManager {
 private:
     Graph graph;
     Routes routes;
-    std::unordered_map<BoatID, Voyage> current_voyage;
+
+    std::unordered_map<ShipId, Voyage> ship_to_voyage;
+    std::unordered_map<IcebreakerId, Voyage> icebreaker_to_voyage;
 
     DistanceMatrix distances;
 
@@ -41,16 +43,17 @@ public:
     std::shared_ptr<Ships> ships;
     PathManager(Graph graph, std::shared_ptr<Icebreakers> icebreakers, std::shared_ptr<Ships> ships);
     // build path to point, return next step, update current_route for all boats in caravan
-    Voyage sail2point(Icebreaker &icebreaker, VertID point, Date current_time);
+    Voyage sail2point(const Icebreaker &icebreaker, VertID point, Date current_time);
     // build path to all icebreaker's caravan final points, return next step, update current_route
-    Voyage sail2depots(Icebreaker &icebreaker, Date current_time);
-    Voyage getCurrentVoyage(BoatID boat);
+    Voyage sail2depots(const Icebreaker &icebreaker, Date current_time);
+    Voyage getCurrentVoyage(ShipId ship_id);
+    Voyage getCurrentVoyage(IcebreakerId icebreaker_id);
 
     std::pair<VertID, double> GetNearestVertex(VertID source, const std::vector<VertID>& vertexes) const;
     double PathDistance(VertID start, const std::vector<VertID>& points) const;
 
 private:
     VertID GetNextVertexInShortestPath(VertID current, VertID end) const;
-    double GetMinimalSpeedInCaravan(const Icebreaker& icebreaker, const std::set<BoatID>& caravan) const;
+    double GetMinimalSpeedInCaravan(const Caravan& caravan) const;
 };
 

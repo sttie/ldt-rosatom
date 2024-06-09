@@ -45,43 +45,86 @@ struct Voyage { // path between 2 vertices
     Date start_time = 0, end_time = 0;
 };
 
-typedef uint32_t BoatID;
-
-typedef std::set<BoatID> Caravan;
-
-typedef std::vector<std::pair<Caravan, Voyage>> Schedule; // result of algorithm - caravan + path
-
-inline std::string CaravanToString(const Caravan& caravan) {
-    std::string caravan_str = "{";
-    for (auto it = caravan.begin(); it != caravan.end(); ++it) {
-        caravan_str += std::to_string(*it);
-        if (it != std::prev(caravan.end())) {
-            caravan_str += ", ";
-        }
-    }
-    caravan_str += "}";
-
-    return caravan_str;
-}
-
 // Boat types
 
-struct BoatInfo {
-    BoatID id;
+struct ShipId {
+    size_t id;
+
+    ShipId(size_t id = 0)
+        : id(id)
+    {
+    }
+    ShipId(const ShipId& other)
+        : id(other.id)
+    {}
+
+    bool operator<(const ShipId& other) const {
+        return id < other.id;
+    }
+
+    bool operator==(const ShipId& other) const {
+        return id == other.id;
+    }
+};
+
+template <>
+struct std::hash<ShipId> {
+    std::size_t operator()(const ShipId& ship_id) const {
+        return std::hash<size_t>{}(ship_id.id);
+    }
+};
+
+struct IcebreakerId {
+    size_t id = 0;
+
+    IcebreakerId(size_t id = 0)
+        : id(id)
+    {
+    }
+    IcebreakerId(const IcebreakerId& other)
+        : id(other.id)
+    {}
+
+    bool operator<(const IcebreakerId& other) const {
+        return id < other.id;
+    }
+
+    bool operator==(const IcebreakerId& other) const {
+        return id == other.id;
+    }
+};
+
+template <>
+struct std::hash<IcebreakerId> {
+    std::size_t operator()(const IcebreakerId& icebreaker_id) const {
+        return std::hash<size_t>{}(icebreaker_id.id);
+    }
+};
+
+
+struct Caravan {
+    std::set<ShipId> ships_id;
+    IcebreakerId icebreaker_id;
+};
+
+struct Ship {
+    ShipId id;
     std::string name;
     double knot_speed; // on clean water!
     IceClass ice_class;
     VertID cur_pos;
-};
-
-struct Ship: public BoatInfo {
     int voyage_start_date;
     VertID finish;
 };
 
-struct Icebreaker: public BoatInfo {
+struct Icebreaker {
+    IcebreakerId id;
+    std::string name;
+    double knot_speed; // on clean water!
+    IceClass ice_class;
+    VertID cur_pos;
     Caravan caravan;
-    BoatID to_pickup = 0;
+    ShipId to_pickup;
 };
 
 using Ships = std::vector<Ship>;
@@ -90,3 +133,18 @@ using Icebreakers = std::vector<Icebreaker>;
 using IcebreakersPtr = std::shared_ptr<Icebreakers>;
 
 using IceGrid = std::vector<std::vector<double>>;
+
+typedef std::vector<std::pair<Caravan, Voyage>> Schedule; // result of algorithm - caravan + path
+
+inline std::string CaravanToString(const Caravan& caravan) {
+    std::string caravan_str = "{";
+    for (auto it = caravan.ships_id.begin(); it != caravan.ships_id.end(); ++it) {
+        caravan_str += std::to_string(it->id);
+        if (it != std::prev(caravan.ships_id.end())) {
+            caravan_str += ", ";
+        }
+    }
+    caravan_str += "}";
+
+    return caravan_str;
+}
