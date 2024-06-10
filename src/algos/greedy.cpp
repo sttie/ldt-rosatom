@@ -99,10 +99,13 @@ Schedule algos::greedy(PathManager &manager) {
             // ВОПРОС: ЗАЧЕМ end_time == 0?
             if (last_voyage.end_time == 0 || last_voyage.end_time <= cur_time) {
                 // move caravan to vertex
-                icebreaker.cur_pos = last_voyage.end_point;
+
+                if (!last_voyage.end_time == 0)
+                    icebreaker.cur_pos = last_voyage.end_point;
 
                 for (auto &ship_id : icebreaker.caravan.ships_id) {
-                    ships[ship_id.id].cur_pos = last_voyage.end_point;
+                    if (!last_voyage.end_time == 0)
+                        ships[ship_id.id].cur_pos = last_voyage.end_point;
 
                     // remove arrived ships
                     if (ships[ship_id.id].finish == ships[ship_id.id].cur_pos) {
