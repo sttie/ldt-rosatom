@@ -28,7 +28,12 @@ int main() {
     
     /** Parsing input data **/
 
-    auto icebreakers = parser::ParseIcebreakers("../dataset/ScheduleTest.xlsx");
+    GraphPointsInfo graph_points = parser::ParseGraphPointsFromExcel("../dataset/ГрафДанные.xlsx");
+    // Graph graph = parser::ParseGraphFromExcel("../dataset/ГрафДанные.xlsx");
+    auto ice_grid = parser::ParseIceGrid("../dataset/IntegrVelocity.xlsx");
+    std::cout << "ice grid has been read!" << std::endl;
+
+    auto icebreakers = parser::ParseIcebreakers("../dataset/ScheduleTest.xlsx", graph_points);
     for (auto& icebreaker : *icebreakers) {
         std::cout << icebreaker.id.id << " "
                   << icebreaker.name << ": "
@@ -37,8 +42,10 @@ int main() {
                   << ", departure=" << icebreaker.cur_pos
                   << "\n" << std::endl;
     }
+     
+    std::cout << "icebreakers has been read!" << std::endl;
 
-    auto ships = parser::ParseShipsSchedule("../dataset/ScheduleTest.xlsx");
+    auto ships = parser::ParseShipsSchedule("../dataset/ScheduleTest.xlsx", graph_points);
     for (auto& ship : *ships) {
         std::cout << ship.id.id << " "
                   << ship.name << ": ice_class=" << static_cast<int>(ship.ice_class)
@@ -49,6 +56,8 @@ int main() {
                   << "\n" << std::endl;
     }
 
+    std::cout << "ships has been read!" << std::endl;
+
     // ТЕСТ!!!
     (*ships)[0].cur_pos = 0; (*ships)[0].finish = 1;
     (*ships)[1].cur_pos = 4; (*ships)[1].finish = 3;
@@ -57,7 +66,7 @@ int main() {
     (*icebreakers)[0].cur_pos = 4;
     (*icebreakers)[1].cur_pos = 2;
 
-    // Graph graph = parser::ParseGraphFromExcel("../dataset/ГрафДанные.xlsx");
+    Graph graph = parser::ParseGraphFromExcel("../dataset/ГрафДанные.xlsx");
     Graph graph;
     GenerateGraph(graph);
     std::ofstream graphviz_file{"graph_visual.dot"};
@@ -78,6 +87,9 @@ int main() {
         auto start = voyage.start_point, end = voyage.end_point;
         std::cout << CaravanToString(caravan) << ": " << start << " -> " << end << std::endl;
     }
+
+    std::cout << "done!" << std::endl;
+    int _; std::cin >> _;
 
     return 0;
 }

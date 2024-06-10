@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <memory>
 #include <set>
+#include <array>
 
 // Input data types
 
@@ -36,9 +37,32 @@ inline IceClass FromStringToIceClass(const std::string& ice_class_str) {
     throw std::logic_error("unknown ice class: " + ice_class_str);
 }
 
+constexpr size_t ICE_WEEKS_AMOUNT = 1;
+
+struct IceGrid {
+    std::vector<std::vector<double>> lon;
+    std::vector<std::vector<double>> lat;
+    
+    using Ice = std::vector<std::vector<double>>;
+    std::array<Ice, ICE_WEEKS_AMOUNT> weekly_ice;
+};
+
 using Date = time_t;
 
-typedef uint32_t VertID; // id of vertex in graph
+using VertID = size_t; // id of vertex in graph
+
+struct PointId {
+    VertID id;
+};
+
+struct GraphPoint {
+    PointId point_id;
+    double latitude;
+    double longitude;
+    std::string point_name;
+};
+
+using GraphPointsInfo = std::vector<GraphPoint>;
 
 struct Voyage { // path between 2 vertices
     VertID start_point, end_point;
@@ -131,8 +155,6 @@ using Ships = std::vector<Ship>;
 using ShipsPtr = std::shared_ptr<Ships>;
 using Icebreakers = std::vector<Icebreaker>;
 using IcebreakersPtr = std::shared_ptr<Icebreakers>;
-
-using IceGrid = std::vector<std::vector<double>>;
 
 typedef std::vector<std::pair<Caravan, Voyage>> Schedule; // result of algorithm - caravan + path
 
