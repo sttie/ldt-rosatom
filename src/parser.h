@@ -1,18 +1,15 @@
 #pragma once
 
 #include "structs.h"
-#include "graph/graph.h"
+#include "path.h"
 
 #include <vector>
 
 namespace parser {
 
-using Ships = std::vector<Ship>;
-using Icebreakers = std::vector<Icebreaker>;
+IcebreakersPtr ParseIcebreakers(const std::string& dataset_path);
+ShipsPtr ParseShipsSchedule(const std::string& dataset_path);
 
-Ships ParseShipsSchedule(const std::string& dataset_path);
-Icebreakers ParseIcebreakers(const std::string& dataset_path);
-
-Graph<double> ParseGraphFromExcel(const std::string& graph_filepath);
+Graph ParseGraphFromExcel(const std::string& graph_filepath);
 
 }

@@ -27,7 +27,11 @@ std::unordered_map<std::string, int> month_to_index = {
 
 }
 
-Ships ParseShipsSchedule(const std::string& dataset_path) {
+VertID getVertID(const std::string &str) {
+    return 0; //TODO
+}
+
+ShipsPtr ParseShipsSchedule(const std::string& dataset_path) {
     OpenXLSX::XLDocument doc{dataset_path};
     if (!doc.isOpen()) {
         throw std::runtime_error("unable to open " + dataset_path + " file");
@@ -35,7 +39,8 @@ Ships ParseShipsSchedule(const std::string& dataset_path) {
     
     auto wks = doc.workbook().worksheet(1);
 
-    Ships ships;
+    size_t index = 0;
+    auto ships = std::make_shared<Ships>();
     for (size_t row = 2;;++row) {
         if (wks.cell("A" + std::to_string(row)).value().type() == OpenXLSX::XLValueType::Empty) {
             break;
@@ -54,8 +59,8 @@ Ships ParseShipsSchedule(const std::string& dataset_path) {
             throw std::runtime_error("wtf is the type of knot_speed column (ship)?..");
         }
 
-        ship.departure = wks.cell("D" + std::to_string(row)).value().getString();
-        ship.destination = wks.cell("E" + std::to_string(row)).value().getString();
+        ship.cur_pos = getVertID(wks.cell("D" + std::to_string(row)).value().getString());
+        ship.finish = getVertID(wks.cell("E" + std::to_string(row)).value().getString());
         ship.voyage_start_date = wks.cell("F" + std::to_string(row)).value().get<int>();
 
         // char weekday_str[20], month_str[20]; int monthday = -1, year = -1;
@@ -71,20 +76,24 @@ Ships ParseShipsSchedule(const std::string& dataset_path) {
         // tm.tm_isdst = -1; // Use DST value from local time zone
         // auto voyage_start_tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
         
-        ships.push_back(std::move(ship));
+        ship.id = ShipId{index++};
+        
+        ships->push_back(std::move(ship));
     }
 
     return ships;
 }
 
-Icebreakers ParseIcebreakers(const std::string& dataset_path) {
+IcebreakersPtr ParseIcebreakers(const std::string& dataset_path) {
     OpenXLSX::XLDocument doc{dataset_path};
     if (!doc.isOpen()) {
         throw std::runtime_error("unable to open " + dataset_path + " file");
     }
 
-    Icebreakers icebreakers;
+    auto icebreakers = std::make_shared<Icebreakers>();
     auto wks = doc.workbook().worksheet(1);
+    
+    size_t index = 0;
 
     for (size_t row = 47;;++row) {
         if (wks.cell("C" + std::to_string(row)).value().type() == OpenXLSX::XLValueType::Empty) {
@@ -104,15 +113,18 @@ Icebreakers ParseIcebreakers(const std::string& dataset_path) {
         }
 
         icebreaker.ice_class = FromStringToIceClass(wks.cell("E" + std::to_string(row)).value().getString());
-        icebreaker.departure = wks.cell("F" + std::to_string(row)).value().getString();
+        icebreaker.cur_pos = getVertID(wks.cell("F" + std::to_string(row)).value().getString());
 
-        icebreakers.push_back(std::move(icebreaker));
+        icebreaker.id = IcebreakerId{index++};
+        icebreaker.caravan = Caravan{{}, icebreaker.id};
+
+        icebreakers->push_back(std::move(icebreaker));
     }
 
     return icebreakers;
 }
 
-Graph<double> ParseGraphFromExcel(const std::string& graph_filepath) {
+Graph ParseGraphFromExcel(const std::string& graph_filepath) {
     OpenXLSX::XLDocument doc{graph_filepath};
     if (!doc.isOpen()) {
         throw std::runtime_error("unable to open " + graph_filepath + " file");
@@ -130,13 +142,13 @@ Graph<double> ParseGraphFromExcel(const std::string& graph_filepath) {
         ++graph_size;
     }
 
-    Graph<double> graph{graph_size};
+    Graph graph;
     for (size_t row = 2; row < graph_size; ++row) {
         size_t start = wks.cell("B" + std::to_string(row)).value().get<size_t>();
         size_t end = wks.cell("C" + std::to_string(row)).value().get<size_t>();
         
         auto length_cell = wks.cell("D" + std::to_string(row));
-        double length;
+        float length;
 
         if (length_cell.value().type() == OpenXLSX::XLValueType::Integer) {
             length = static_cast<double>(length_cell.value().get<int>());
@@ -146,7 +158,7 @@ Graph<double> ParseGraphFromExcel(const std::string& graph_filepath) {
             throw std::runtime_error("wtf is the type of knot_speed column (icebreaker)?..");
         }
 
-        graph.AddEdge(start, end, length);
+        boost::add_edge(start, end, length, graph);
     }
 
     return graph;
