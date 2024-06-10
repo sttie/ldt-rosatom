@@ -5,7 +5,7 @@
 #include <OpenXLSX.hpp>
 #include <iostream>
 #include <unordered_map>
-
+#include <locale>
 #include <boost/algorithm/string.hpp>
 
 namespace parser {
@@ -45,6 +45,14 @@ VertID getVertID(const std::string& point_name, const GraphPointsInfo& graph_poi
 
 }
 
+std::string capitalize(std::string str) {
+    std::wstring wc(1, L'#');
+    std::mbstowcs(&wc[0], str.c_str(), 1);
+    wc[0] = std::towupper(wc[0]);
+    std::wcstombs(str.data(), wc.c_str(), 2);
+    return str;
+}
+
 GraphPointsInfo ParseGraphPointsFromExcel(const std::string& graph_filepath) {
     OpenXLSX::XLDocument doc{graph_filepath};
     if (!doc.isOpen()) {
@@ -80,7 +88,8 @@ GraphPointsInfo ParseGraphPointsFromExcel(const std::string& graph_filepath) {
             throw std::runtime_error("wtf is the type of knot_speed column (icebreaker)?..");
         }
 
-        point.point_name = wks.cell("D" + std::to_string(row)).value().getString();
+        point.point_name = capitalize(wks.cell("D" + std::to_string(row)).value().getString());
+        std::cout << point.point_name << "\n";
 
         points_info.push_back(std::move(point));
     }
@@ -212,8 +221,8 @@ ShipsPtr ParseShipsSchedule(const std::string& dataset_path, const GraphPointsIn
             throw std::runtime_error("wtf is the type of knot_speed column (ship)?..");
         }
 
-        ship.cur_pos = getVertID(wks.cell("D" + std::to_string(row)).value().getString(), graph_points_info);
-        ship.finish = getVertID(wks.cell("E" + std::to_string(row)).value().getString(), graph_points_info);
+        ship.cur_pos = getVertID(capitalize(wks.cell("D" + std::to_string(row)).value().getString()), graph_points_info);
+        ship.finish = getVertID(capitalize(wks.cell("E" + std::to_string(row)).value().getString()), graph_points_info);
         ship.voyage_start_date = wks.cell("F" + std::to_string(row)).value().get<int>();
         ship.id = ShipId{index++};
         
@@ -252,7 +261,7 @@ IcebreakersPtr ParseIcebreakers(const std::string& dataset_path, const GraphPoin
         }
 
         icebreaker.ice_class = FromStringToIceClass(wks.cell("E" + std::to_string(row)).value().getString());
-        icebreaker.cur_pos = getVertID(wks.cell("F" + std::to_string(row)).value().getString(), graph_points_info);
+        icebreaker.cur_pos = getVertID(capitalize(wks.cell("F" + std::to_string(row)).value().getString()), graph_points_info);
 
         icebreaker.id = IcebreakerId{index++};
         icebreaker.caravan = Caravan{{}, icebreaker.id};
