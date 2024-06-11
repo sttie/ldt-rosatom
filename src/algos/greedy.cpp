@@ -194,7 +194,7 @@ Schedule algos::greedy(PathManager &manager) {
                         std::cout << " " << sh_id.id;
                 }
                 std::cout << ": " << decision.start_point << "->" << decision.end_point << "\n";
-                res.push_back({icebreaker.caravan, decision});
+                res.push_back({icebreaker.caravan, decision, icebreaker.id});
             }
         }
     }

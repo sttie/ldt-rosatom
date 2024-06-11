@@ -66,7 +66,7 @@ int main() {
     (*icebreakers)[0].cur_pos = 4;
     (*icebreakers)[1].cur_pos = 2;
 
-    Graph graph = parser::ParseGraphFromExcel("../dataset/ГрафДанные.xlsx");
+    // Graph graph = parser::ParseGraphFromExcel("../dataset/ГрафДанные.xlsx");
     Graph graph;
     GenerateGraph(graph);
     std::ofstream graphviz_file{"graph_visual.dot"};
@@ -83,9 +83,13 @@ int main() {
     Schedule res = algos::greedy(pm);
 
     std::cout << "schedule size: " << res.size() << std::endl;
-    for (const auto& [caravan, voyage] : res) {
-        auto start = voyage.start_point, end = voyage.end_point;
-        std::cout << CaravanToString(caravan) << ": " << start << " -> " << end << std::endl;
+    for (const auto& sch_atom: res) {
+        auto start = sch_atom.edge_voyage.start_point, end = sch_atom.edge_voyage.end_point;
+        if (sch_atom.icebreaker_id.is_initialized())
+            std::cout << "[" << std::to_string(sch_atom.icebreaker_id->id) << "] ";
+        std::cout << CaravanToString(sch_atom.ships_id) << ": " << start << " -> " << end;
+        std::cout << " (" << sch_atom.edge_voyage.start_time << ";" << sch_atom.edge_voyage.end_time << ")";
+        std::cout << "\n";
     }
 
     std::cout << "done!" << std::endl;
