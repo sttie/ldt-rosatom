@@ -138,7 +138,7 @@ struct Ship {
     double knot_speed; // on clean water!
     IceClass ice_class;
     VertID cur_pos;
-    int voyage_start_date;
+    Date voyage_start_date;
     VertID finish;
 };
 
