@@ -45,14 +45,14 @@ PathManager::PathManager(DatesToGraph date_to_graph, std::shared_ptr<Icebreakers
 }
 
 // build path to point, return next step
-Voyage PathManager::sail2point(const Icebreaker &icebreaker, VertID point, Date current_time) {
+Voyage PathManager::sail2point(const Icebreaker &icebreaker, VertID point) {
     auto next_vertex = GetNextVertexInShortestPath(icebreaker.cur_pos, point);
     
     Voyage voyage;
-    voyage.start_time = current_time;
+    voyage.start_time = cur_time;
     voyage.start_point = icebreaker.cur_pos;
-    voyage.end_time = current_time + GetEdgeWeight(graph, icebreaker.cur_pos, next_vertex) /
-                                     GetMinimalSpeedInCaravan(icebreaker.caravan);
+    voyage.end_time = cur_time + GetEdgeWeight(graph, icebreaker.cur_pos, next_vertex) /
+                                     (24 * GetMinimalSpeedInCaravan(icebreaker.caravan));
     voyage.end_point = next_vertex;
 
     icebreaker_to_voyage[icebreaker.id] = voyage;
@@ -63,7 +63,7 @@ Voyage PathManager::sail2point(const Icebreaker &icebreaker, VertID point, Date 
 }
 
 // build path to all icebreaker's caravan final points, return next step
-Voyage PathManager::sail2depots(const Icebreaker &icebreaker, Date current_time) {
+Voyage PathManager::sail2depots(const Icebreaker &icebreaker) {
     std::vector<VertID> all_caravan_end_points;
     for (auto ship_id : icebreaker.caravan.ships_id) {
         all_caravan_end_points.push_back((*ships)[ship_id.id].finish);
@@ -72,7 +72,7 @@ Voyage PathManager::sail2depots(const Icebreaker &icebreaker, Date current_time)
     // тут должно быть оптимальное построение пути по всем точкам (задача коммивояжера), но пока здесь путь до первой попавшейся
     if (!all_caravan_end_points.empty()) {
         auto [next, new_dist] = GetNearestVertex(icebreaker.cur_pos, all_caravan_end_points);
-        auto res = sail2point(icebreaker, next, current_time);
+        auto res = sail2point(icebreaker, next);
         icebreaker_to_voyage[icebreaker.id] = res;
         for (auto &ship_id: icebreaker.caravan.ships_id)
             ship_to_voyage[ship_id] = res;
@@ -94,7 +94,8 @@ Voyage PathManager::getCurrentVoyage(IcebreakerId icebreaker_id) {
 }
 
 VertID PathManager::GetNextVertexInShortestPath(VertID current, VertID end) const {
-    int optimal_neighbour, optimal_metric; bool found = false;
+    float optimal_neighbour, optimal_metric = std::numeric_limits<float>::infinity();
+    bool found = false;
 
     for (auto neighbour : boost::make_iterator_range(boost::out_edges(current, graph))) {
         int target = boost::target(neighbour, graph);

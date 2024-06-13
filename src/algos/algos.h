@@ -8,7 +8,7 @@ template<typename K, typename V>
 std::vector<std::pair<K, V>> sortMapLess(const std::map<K, V> &m) {
     auto cmp = [](std::pair<K,V> const &a, std::pair<K,V> const &b) 
     { 
-        return a.second < b.second;
+        return a.second == b.second ? a.first < b.first : a.second < b.second;
     };
     std::vector<std::pair<K, V>> vec_sorted;
     for (const auto &val: m)

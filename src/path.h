@@ -61,14 +61,14 @@ private:
     DatesToDistances date_to_distances;
 
 public:
-    Date cur_time = 0;
+    Days cur_time = 0;
     std::shared_ptr<Icebreakers> icebreakers;
     std::shared_ptr<Ships> ships;
     PathManager(DatesToGraph date_to_graph, std::shared_ptr<Icebreakers> icebreakers, std::shared_ptr<Ships> ships);
     // build path to point, return next step, update current_route for all boats in caravan
-    Voyage sail2point(const Icebreaker &icebreaker, VertID point, Date current_time);
+    Voyage sail2point(const Icebreaker &icebreaker, VertID point);
     // build path to all icebreaker's caravan final points, return next step, update current_route
-    Voyage sail2depots(const Icebreaker &icebreaker, Date current_time);
+    Voyage sail2depots(const Icebreaker &icebreaker);
     Voyage getCurrentVoyage(ShipId ship_id);
     Voyage getCurrentVoyage(IcebreakerId icebreaker_id);
 
