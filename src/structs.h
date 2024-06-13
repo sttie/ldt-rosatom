@@ -48,7 +48,7 @@ struct IceGrid {
     std::array<Ice, ICE_WEEKS_AMOUNT> weekly_ice;
 };
 
-using Date = time_t;
+using Days = float;
 
 using VertID = size_t; // id of vertex in graph
 
@@ -67,7 +67,7 @@ using GraphPointsInfo = std::vector<GraphPoint>;
 
 struct Voyage { // path between 2 vertices
     VertID start_point, end_point;
-    Date start_time = 0, end_time = 0;
+    Days start_time = 0, end_time = 0;
 };
 
 // Boat types
@@ -138,7 +138,7 @@ struct Ship {
     double knot_speed; // on clean water!
     IceClass ice_class;
     VertID cur_pos;
-    Date voyage_start_date;
+    Days voyage_start_date;
     VertID finish;
 };
 
@@ -149,7 +149,6 @@ struct Icebreaker {
     IceClass ice_class;
     VertID cur_pos;
     Caravan caravan;
-    ShipId to_pickup;
 };
 
 using Ships = std::vector<Ship>;
