@@ -4,8 +4,13 @@
 
 #include <OpenXLSX.hpp>
 #include <iostream>
+#include <array>
+#include <string>
 #include <unordered_map>
 #include <boost/algorithm/string.hpp>
+
+#include <nlohmann/json.hpp>
+#include <fstream>
 
 namespace parser {
 
@@ -30,7 +35,6 @@ std::unordered_map<std::string, int> month_to_index = {
 };
 
 VertID getVertID(const std::string& point_name, const GraphPointsInfo& graph_points_info) {
-    std::cout << "find point_name: " << point_name << std::endl;
     auto it = std::find_if(graph_points_info.begin(), graph_points_info.end(),
                            [&point_name](const auto& point) {
                                return boost::algorithm::to_lower_copy(point.point_name) == boost::algorithm::to_lower_copy(point_name);
@@ -81,7 +85,6 @@ GraphPointsInfo ParseGraphPointsFromExcel(const std::string& graph_filepath) {
         }
 
         point.point_name = wks.cell("D" + std::to_string(row)).value().getString();
-        std::cout << point.point_name << "\n";
 
         points_info.push_back(std::move(point));
     }
@@ -89,43 +92,68 @@ GraphPointsInfo ParseGraphPointsFromExcel(const std::string& graph_filepath) {
     return points_info;
 }
 
-Graph ParseGraphFromExcel(const std::string& graph_filepath) {
-    OpenXLSX::XLDocument doc{graph_filepath};
-    if (!doc.isOpen()) {
-        throw std::runtime_error("unable to open " + graph_filepath + " file");
+std::unordered_map<std::string, Graph> ParseGraphFromJson(
+        const std::string& vertices_filepath,
+        const std::string& edges_filepath) {
+    using json = nlohmann::json;
+    static const std::array<std::string, 14> ice_dates = {
+        "03-Mar-2020",
+        "10-Mar-2020",
+        "17-Mar-2020",
+        "24-Mar-2020",
+        "31-Mar-2020",
+        "02-Apr-2020",
+        "07-Apr-2020",
+        "14-Apr-2020",
+        "21-Apr-2020",
+        "28-Apr-2020",
+        "05-May-2020",
+        "12-May-2020",
+        "19-May-2020",
+        "26-May-2020"
+    };
+
+    std::ifstream vertices_file(vertices_filepath);
+    auto vertices_data = json::parse(vertices_file);
+    if (vertices_data.is_null()) {
+        throw std::runtime_error(vertices_filepath + " is invalid");
     }
 
-    auto wks = doc.workbook().worksheet(2);
-
-    size_t graph_size = 0;
-    for (size_t row = 2;;++row) {
-        if (wks.cell("A" + std::to_string(row)).value().type() == OpenXLSX::XLValueType::Empty) {
-            break;
-        }
-        
-        ++graph_size;
+    std::ifstream edges_file(edges_filepath);
+    auto edges_data = json::parse(edges_file);
+    if (edges_data.is_null()) {
+        throw std::runtime_error(edges_filepath + " is invalid");
     }
 
+    std::unordered_map<std::string, Graph> date_to_graph;
     Graph graph;
-    for (size_t row = 2; row < graph_size; ++row) {
-        size_t start = wks.cell("B" + std::to_string(row)).value().get<size_t>();
-        size_t end = wks.cell("C" + std::to_string(row)).value().get<size_t>();
-        
-        auto length_cell = wks.cell("D" + std::to_string(row));
-        float length;
 
-        if (length_cell.value().type() == OpenXLSX::XLValueType::Integer) {
-            length = static_cast<double>(length_cell.value().get<int>());
-        } else if (length_cell.value().type() == OpenXLSX::XLValueType::Float) {
-            length = length_cell.value().get<double>();
-        } else {
-            throw std::runtime_error("wtf is the type of knot_speed column (icebreaker)?..");
-        }
+    for (const auto& vertex_json : vertices_data) {
+        VertexProperty property;
+        property.lat = vertex_json.at("lat").get<float>();
+        property.lon = vertex_json.at("lon").get<float>();
+        property.name = vertex_json.at("name").get<std::string>();
 
-        boost::add_edge(start, end, length, graph);
+        boost::add_vertex(property, graph);
     }
 
-    return graph;
+    for (const auto& date : ice_dates) {
+        date_to_graph[date] = graph;
+    }
+
+    for (const auto& edge_json : edges_data) {
+        EdgeProperty property;
+        property.start_id = edge_json.at("start").get<size_t>();
+        property.end_id = edge_json.at("end").get<size_t>();
+        property.len = edge_json.at("len").get<float>();
+
+        for (const auto& [date, type_val_json] : edge_json.at("type").items()) {
+            property.ice_type = type_val_json.get<int>();
+            boost::add_edge(property.start_id, property.end_id, property, date_to_graph[date]);
+        }
+    }
+
+    return date_to_graph;
 }
 
 IceGrid ParseIceGrid(const std::string& ice_filepath) {

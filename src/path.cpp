@@ -5,10 +5,10 @@
 namespace {
 
 DistanceMatrix DistanceMatrixByGraph(Graph& graph) {
-    using WeightMap = boost::property_map<Graph, boost::edge_weight_t>::type;
+    // using WeightMap = boost::property_map<Graph, boost::edge_weight_t>::type;
     using DistanceMatrixMap = DistanceProperty::matrix_map_type;
 
-    WeightMap weight_pmap = boost::get(boost::edge_weight, graph);
+    auto weight_pmap = boost::get(&EdgeProperty::len, graph);
 
     // set the distance matrix to receive the floyd warshall output
     DistanceMatrix distances(boost::num_vertices(graph));
@@ -25,15 +25,22 @@ DistanceMatrix DistanceMatrixByGraph(Graph& graph) {
     return distances;
 }
 
+int GetDayOfWeek(Date time) {
+    
 }
 
-PathManager::PathManager(Graph graph, std::shared_ptr<Icebreakers> icebreakers, std::shared_ptr<Ships> ships)
-    : graph(std::move(graph))
+}
+
+PathManager::PathManager(DatesToGraph date_to_graph, std::shared_ptr<Icebreakers> icebreakers, std::shared_ptr<Ships> ships)
+    : date_to_graph(std::move(date_to_graph))
     , icebreakers(std::move(icebreakers))
     , ships(std::move(ships))
-    , distances(boost::num_vertices(graph))
 {
-    distances = DistanceMatrixByGraph(graph);
+    // distances = DistanceMatrixByGraph(graph);
+    for (auto& [date, graph] : date_to_graph) {
+        date_to_distances[date] = DistanceMatrixByGraph(graph);
+    }
+
     // c(i, k) + d(k, j)
 }
 

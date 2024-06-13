@@ -7,13 +7,34 @@
 #include "structs.h"
 
 using EdgeWeightProperty = boost::property<boost::edge_weight_t, double>;
-using Graph = boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::no_property, EdgeWeightProperty>;
+
+struct VertexProperty {
+    float lat, lon;
+    std::string name = "";
+};
+
+struct EdgeProperty {
+    size_t start_id, end_id;
+    double len;
+    int ice_type;
+};
+
+// using Graph = boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::no_property, EdgeWeightProperty>;
+
+using Graph = boost::adjacency_list<boost::vecS,
+                                    boost::vecS,
+                                    boost::undirectedS,
+                                    VertexProperty,
+                                    EdgeProperty>;
 
 using Path = std::vector<VertID>; // set of vertices
 using Routes = std::vector<std::vector<Path>>; // matrix of full path between every pair of vertices
 
 using DistanceProperty = boost::exterior_vertex_property<Graph, double>;
 using DistanceMatrix = DistanceProperty::matrix_type;
+
+using DatesToGraph = std::unordered_map<std::string, Graph>;
+using DatesToDistances = std::unordered_map<std::string, DistanceMatrix>;
 
 template <typename Graph>
 inline auto GetEdgeWeight(
@@ -25,24 +46,25 @@ inline auto GetEdgeWeight(
         throw std::runtime_error("no such edge between " + std::to_string(v1) + " and " + std::to_string(v2));
     }
 
-    return boost::get(boost::edge_weight_t(), graph, edge);
+    return graph[edge].len;
+    // return boost::get(boost::edge_weight_t(), graph, edge);
 }
 
 class PathManager {
 private:
-    Graph graph;
+    DatesToGraph date_to_graph;
     Routes routes;
 
     std::unordered_map<ShipId, Voyage> ship_to_voyage;
     std::unordered_map<IcebreakerId, Voyage> icebreaker_to_voyage;
 
-    DistanceMatrix distances;
+    DatesToDistances date_to_distances;
 
 public:
     Date cur_time = 0;
     std::shared_ptr<Icebreakers> icebreakers;
     std::shared_ptr<Ships> ships;
-    PathManager(Graph graph, std::shared_ptr<Icebreakers> icebreakers, std::shared_ptr<Ships> ships);
+    PathManager(DatesToGraph date_to_graph, std::shared_ptr<Icebreakers> icebreakers, std::shared_ptr<Ships> ships);
     // build path to point, return next step, update current_route for all boats in caravan
     Voyage sail2point(const Icebreaker &icebreaker, VertID point, Date current_time);
     // build path to all icebreaker's caravan final points, return next step, update current_route

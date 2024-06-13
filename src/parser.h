@@ -8,7 +8,7 @@
 namespace parser {
 
 GraphPointsInfo ParseGraphPointsFromExcel(const std::string& graph_filepath);
-Graph ParseGraphFromExcel(const std::string& graph_filepath);
+std::unordered_map<std::string, Graph> ParseGraphFromJson(const std::string& vertices_filepath, const std::string& edges_filepath);
 
 IceGrid ParseIceGrid(const std::string& ice_filepath);
 
