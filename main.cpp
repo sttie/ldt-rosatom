@@ -60,12 +60,12 @@ int main() {
     std::cout << "ships has been read!" << std::endl;
 
     // ТЕСТ!!!
-    (*ships)[0].cur_pos = 0; (*ships)[0].finish = 1;
-    (*ships)[1].cur_pos = 4; (*ships)[1].finish = 3;
-    (*ships)[2].cur_pos = 2; (*ships)[2].finish = 1;
+    // (*ships)[0].cur_pos = 0; (*ships)[0].finish = 1;
+    // (*ships)[1].cur_pos = 4; (*ships)[1].finish = 3;
+    // (*ships)[2].cur_pos = 2; (*ships)[2].finish = 1;
 
-    (*icebreakers)[0].cur_pos = 4;
-    (*icebreakers)[1].cur_pos = 2;
+    // (*icebreakers)[0].cur_pos = 4;
+    // (*icebreakers)[1].cur_pos = 2;
 
     Graph graph = parser::ParseGraphFromExcel("../dataset/ГрафДанные.xlsx");
     // Graph graph;
