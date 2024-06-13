@@ -64,7 +64,8 @@ Voyage PathManager::sail2depots(const Icebreaker &icebreaker, Date current_time)
 
     // тут должно быть оптимальное построение пути по всем точкам (задача коммивояжера), но пока здесь путь до первой попавшейся
     if (!all_caravan_end_points.empty()) {
-        auto res = sail2point(icebreaker, all_caravan_end_points.front(), current_time);
+        auto [next, new_dist] = GetNearestVertex(icebreaker.cur_pos, all_caravan_end_points);
+        auto res = sail2point(icebreaker, next, current_time);
         icebreaker_to_voyage[icebreaker.id] = res;
         for (auto &ship_id: icebreaker.caravan.ships_id)
             ship_to_voyage[ship_id] = res;
@@ -130,14 +131,18 @@ std::pair<VertID, double> PathManager::GetNearestVertex(VertID source, const std
     return std::make_pair(nearest, distances[source][nearest]);
 }
 
-double PathManager::PathDistance(VertID start, const std::vector<VertID>& points) const {
+double PathManager::PathDistance(VertID start, std::vector<VertID> points) const {
     if (points.empty()) {
         throw std::runtime_error("PathDistance(): unable to process empty vertexes vector");
     }
 
-    double distance = distances[start][points.front()];
-    for (size_t i = 1; i < points.size(); ++i) {
-        distance += distances[points[i - 1]][points[i]];
+    double distance = 0;
+    VertID cur_point = start;
+    for (size_t i = 0; i < points.size(); ++i) {
+        auto [next, new_dist] = GetNearestVertex(cur_point, points);
+        points.erase(std::find(points.begin(), points.end(), next));
+        distance += new_dist;
+        cur_point = next;
     }
 
     return distance;

@@ -29,11 +29,11 @@ int main() {
     /** Parsing input data **/
 
     GraphPointsInfo graph_points = parser::ParseGraphPointsFromExcel("../dataset/ГрафДанные.xlsx");
-    // Graph graph = parser::ParseGraphFromExcel("../dataset/ГрафДанные.xlsx");
     auto ice_grid = parser::ParseIceGrid("../dataset/IntegrVelocity.xlsx");
     std::cout << "ice grid has been read!" << std::endl;
 
-    auto icebreakers = parser::ParseIcebreakers("../dataset/ScheduleTest.xlsx", graph_points);
+    // auto icebreakers = parser::ParseIcebreakers("../dataset/ScheduleTest.xlsx", graph_points);
+    auto icebreakers = parser::ParseIcebreakers("../dataset/Расписание движения судов.xlsx", graph_points);
     for (auto& icebreaker : *icebreakers) {
         std::cout << icebreaker.id.id << " "
                   << icebreaker.name << ": "
@@ -45,7 +45,8 @@ int main() {
      
     std::cout << "icebreakers has been read!" << std::endl;
 
-    auto ships = parser::ParseShipsSchedule("../dataset/ScheduleTest.xlsx", graph_points);
+    // auto ships = parser::ParseShipsSchedule("../dataset/ScheduleTest.xlsx", graph_points);
+    auto ships = parser::ParseShipsSchedule("../dataset/Расписание движения судов.xlsx", graph_points);
     for (auto& ship : *ships) {
         std::cout << ship.id.id << " "
                   << ship.name << ": ice_class=" << static_cast<int>(ship.ice_class)
@@ -67,8 +68,8 @@ int main() {
     (*icebreakers)[1].cur_pos = 2;
 
     Graph graph = parser::ParseGraphFromExcel("../dataset/ГрафДанные.xlsx");
-    Graph graph;
-    GenerateGraph(graph);
+    // Graph graph;
+    // GenerateGraph(graph);
     std::ofstream graphviz_file{"graph_visual.dot"};
     boost::write_graphviz(graphviz_file, graph);
     graphviz_file.close();
@@ -82,11 +83,17 @@ int main() {
     PathManager pm(graph, icebreakers, ships);
     Schedule res = algos::greedy(pm);
 
-    std::cout << "schedule size: " << res.size() << std::endl;
-    for (const auto& [caravan, voyage] : res) {
-        auto start = voyage.start_point, end = voyage.end_point;
-        std::cout << CaravanToString(caravan) << ": " << start << " -> " << end << std::endl;
+    std::ofstream schedule("schedule.txt");
+    schedule << "schedule size: " << res.size() << std::endl;
+    for (const auto& sch_atom: res) {
+        auto start = sch_atom.edge_voyage.start_point, end = sch_atom.edge_voyage.end_point;
+        if (sch_atom.icebreaker_id.is_initialized())
+            schedule << "[" << std::to_string(sch_atom.icebreaker_id->id) << "] ";
+        schedule << CaravanToString(sch_atom.ships_id) << ": " << start << " -> " << end;
+        schedule << " (" << sch_atom.edge_voyage.start_time << ";" << sch_atom.edge_voyage.end_time << ")";
+        schedule << "\n";
     }
+    schedule.close();
 
     std::cout << "done!" << std::endl;
     int _; std::cin >> _;

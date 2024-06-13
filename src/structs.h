@@ -8,6 +8,7 @@
 #include <memory>
 #include <set>
 #include <array>
+#include <boost/optional.hpp>
 
 // Input data types
 
@@ -137,7 +138,7 @@ struct Ship {
     double knot_speed; // on clean water!
     IceClass ice_class;
     VertID cur_pos;
-    int voyage_start_date;
+    Date voyage_start_date;
     VertID finish;
 };
 
@@ -156,7 +157,13 @@ using ShipsPtr = std::shared_ptr<Ships>;
 using Icebreakers = std::vector<Icebreaker>;
 using IcebreakersPtr = std::shared_ptr<Icebreakers>;
 
-typedef std::vector<std::pair<Caravan, Voyage>> Schedule; // result of algorithm - caravan + path
+struct SheculeAtom {
+    Caravan ships_id;
+    Voyage edge_voyage;
+    boost::optional<IcebreakerId> icebreaker_id;
+};
+
+typedef std::vector<SheculeAtom> Schedule; // result of algorithm - caravan + path
 
 inline std::string CaravanToString(const Caravan& caravan) {
     std::string caravan_str = "{";

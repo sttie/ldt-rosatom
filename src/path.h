@@ -39,6 +39,7 @@ private:
     DistanceMatrix distances;
 
 public:
+    Date cur_time = 0;
     std::shared_ptr<Icebreakers> icebreakers;
     std::shared_ptr<Ships> ships;
     PathManager(Graph graph, std::shared_ptr<Icebreakers> icebreakers, std::shared_ptr<Ships> ships);
@@ -50,7 +51,7 @@ public:
     Voyage getCurrentVoyage(IcebreakerId icebreaker_id);
 
     std::pair<VertID, double> GetNearestVertex(VertID source, const std::vector<VertID>& vertexes) const;
-    double PathDistance(VertID start, const std::vector<VertID>& points) const;
+    double PathDistance(VertID start, std::vector<VertID> points) const;
 
 private:
     VertID GetNextVertexInShortestPath(VertID current, VertID end) const;
