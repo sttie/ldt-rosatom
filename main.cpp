@@ -62,13 +62,21 @@ int main() {
 
     std::cout << "ships has been read!" << std::endl;
 
-    auto graph = parser::ParseGraphFromJson("../dataset/vertices.json", "../dataset/edges.json");
+    auto graph = parser::ParseGraphFromJson("../dataset/vertices.json", "../dataset/edges.json", icebreakers);
 
     /** Дополнительная подготовка данных **/
 
     // /** Алгоритм **/
-    PathManager pm(graph, icebreakers, ships);
-    Schedule res = algos::greedy(pm);
+    PathManager pm(std::move(graph), icebreakers, ships);
+
+    Schedule res;
+    try {
+        res = algos::greedy(pm);
+    } catch (const std::exception& ex) {
+        std::cout << "error occured: " << ex.what() << std::endl;
+        int _; std::cin >> _;
+        exit(-1);
+    }
 
     json res_json;
     res_json["icebreakers"] = json::array();

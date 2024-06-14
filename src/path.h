@@ -15,8 +15,8 @@ struct VertexProperty {
 
 struct EdgeProperty {
     size_t start_id, end_id;
-    float len;
     int ice_type;
+    float weight;
 };
 
 // using Graph = boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::no_property, EdgeWeightProperty>;
@@ -33,10 +33,30 @@ using Routes = std::vector<std::vector<Path>>; // matrix of full path between ev
 using DistanceProperty = boost::exterior_vertex_property<Graph, float>;
 using DistanceMatrix = DistanceProperty::matrix_type;
 
-using DatesToGraph = std::unordered_map<std::string, Graph>;
-using DatesToDistances = std::unordered_map<std::string, DistanceMatrix>;
+const std::unordered_map<std::string, size_t> icebreaker_name_to_index = {
+    {"50 лет победы", 3},
+    {"ямал", 4},
+    {"вайгач", 5},
+    {"таймыр", 6}
+};
 
-template <typename Graph>
+const std::unordered_map<IceClass, size_t> ship_class_to_index = {
+    {IceClass::kNoIceClass, 0},
+    {IceClass::kArc1, 0},
+    {IceClass::kArc2, 0},
+    {IceClass::kArc3, 0},
+
+    {IceClass::kArc4, 1},
+    {IceClass::kArc5, 1},
+    {IceClass::kArc6, 1},
+
+    {IceClass::kArc7, 2},
+};
+
+constexpr size_t GRAPH_CLASSES_AMOUNT = 7;
+using DatesToIceGraph = std::unordered_map<std::string, std::array<Graph, GRAPH_CLASSES_AMOUNT>>;
+using DatesToDistances = std::unordered_map<std::string, std::array<DistanceMatrix, GRAPH_CLASSES_AMOUNT>>;
+
 inline auto GetEdgeLen(
         const Graph& graph,
         typename boost::graph_traits<Graph>::vertex_descriptor v1,
@@ -46,13 +66,13 @@ inline auto GetEdgeLen(
         throw std::runtime_error("no such edge between " + std::to_string(v1) + " and " + std::to_string(v2));
     }
 
-    return graph[edge].len;
+    return graph[edge].weight;
     // return boost::get(boost::edge_weight_t(), graph, edge);
 }
 
 class PathManager {
 private:
-    DatesToGraph date_to_graph;
+    DatesToIceGraph date_to_graph;
     Routes routes;
 
     std::unordered_map<ShipId, Voyage> ship_to_voyage;
@@ -64,7 +84,7 @@ public:
     Days cur_time = 0;
     std::shared_ptr<Icebreakers> icebreakers;
     std::shared_ptr<Ships> ships;
-    PathManager(DatesToGraph date_to_graph, std::shared_ptr<Icebreakers> icebreakers, std::shared_ptr<Ships> ships);
+    PathManager(DatesToIceGraph date_to_graph, std::shared_ptr<Icebreakers> icebreakers, std::shared_ptr<Ships> ships);
     // build path to point, return next step, update current_route for all boats in caravan
     Voyage sail2point(const Icebreaker &icebreaker, VertID point);
     // build path to all icebreaker's caravan final points, return next step, update current_route
@@ -72,12 +92,15 @@ public:
     Voyage getCurrentVoyage(ShipId ship_id);
     Voyage getCurrentVoyage(IcebreakerId icebreaker_id);
 
-    std::pair<VertID, float> GetNearestVertex(VertID source, const std::vector<VertID>& vertexes) const;
-    float PathDistance(VertID start, std::vector<VertID> points) const;
+    std::pair<VertID, float> GetNearestVertex(VertID source, const Icebreaker& icebreaker, const std::vector<VertID>& vertexes) const;
+    std::pair<VertID, float> GetNearestVertex(VertID source, const Ship& ship, const std::vector<VertID>& vertexes) const;
+    float PathDistance(VertID start, const Icebreaker& icebreaker, std::vector<VertID> points) const;
 
 private:
-    VertID GetNextVertexInShortestPath(VertID current, IceClass ice_class, float speed, VertID end) const;
-    float GetMinimalSpeedInCaravan(const Caravan& caravan) const;
+    VertID GetNextVertexInShortestPath(VertID current, const Icebreaker& icebreaker, VertID end) const;
+    VertID GetNextVertexInShortestPath(VertID current, const Ship& ship, VertID end) const;
+
+    float GetMinimalSpeedInCaravan(const Caravan& caravan, int edge_ice_type) const;
     std::string GetCurrentOkayDateByTime(Days time) const;
 };
 

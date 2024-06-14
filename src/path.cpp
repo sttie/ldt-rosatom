@@ -1,16 +1,21 @@
 #include "path.h"
 
 #include <boost/graph/floyd_warshall_shortest.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include <iostream>
+#include <thread>
+#include <mutex>
 
 namespace {
 
 DistanceMatrix DistanceMatrixByGraph(Graph& graph) {
+    std::cout << "start DistanceMatrixByGraph..." << std::endl;
+
     // using WeightMap = boost::property_map<Graph, boost::edge_weight_t>::type;
     using DistanceMatrixMap = DistanceProperty::matrix_map_type;
 
-    auto weight_pmap = boost::get(&EdgeProperty::len, graph);
+    auto weight_pmap = boost::get(&EdgeProperty::weight, graph);
 
     // set the distance matrix to receive the floyd warshall output
     DistanceMatrix distances(boost::num_vertices(graph));
@@ -33,93 +38,76 @@ Days GetWeekDay(Days time) {
     return static_cast<Days>(day % 7 + 1) + frac;
 }
 
-float GetSpeedCoefByClass(int ice_type, IceClass ship_class) {
-    if (ice_type == 0) {
-        return 1.0f;
-    } else if (ice_type == 3) {
-        return 0.0f;
-    }
-
-    switch (ship_class) {
-    case IceClass::kNoIceClass:
-    case IceClass::kArc1:
-    case IceClass::kArc2:
-    case IceClass::kArc3: {
-        return 0; // либо движение запрещено совсем, либо запрещено без проводки
-    }
-    case IceClass::kArc4:
-    case IceClass::kArc5:
-    case IceClass::kArc6: {
-        if (ice_type == 1) {
-            return 0.8f;
-        } else if (ice_type == 2) {
-            return 0.7f;
-        }
-    }
-    case IceClass::kArc7: {
-        if (ice_type == 2) {
-            return 0.6f;
-        } else if (ice_type == 3) {
-            return 0.15f;
-        }
-    }
-    default: {
-        throw std::runtime_error("invalid ship class");
-    }
-    }
-}
-
-float GetIcebreakerSpeed(int ice_type, std::string icebreaker_name) {
-    if (ice_type == 0) {
-        return 1.0f;
-    } else if (ice_type == 3) {
-        return 0.0f;
-    }
-
-    if (ice_type == 1) {
-        if (icebreaker_name == "50 лет Победы" || icebreaker_name == "Ямал") {
-            return 19.0f;
-        } else if (icebreaker_name == "Вайгач" || icebreaker_name == "Таймыр") {
-            return 19.0f * 0.9f;
-        }
-    } else if (ice_type == 2) {
-        if (icebreaker_name == "50 лет Победы" || icebreaker_name == "Ямал") {
-            return 14.0f;
-        } else if (icebreaker_name == "Вайгач" || icebreaker_name == "Таймыр") {
-            return 14.0f * 0.75f;
-        }
-    }
-
-    throw std::runtime_error("invalid icebreaker: " + icebreaker_name);
+size_t GetIcebreakerIndexByName(const std::string& name) {
+    std::cout << "to_lower: " << boost::algorithm::to_lower_copy(name) << std::endl;
+    return icebreaker_name_to_index.at(boost::algorithm::to_lower_copy(name));
 }
 
 }
 
-PathManager::PathManager(DatesToGraph date_to_graph, std::shared_ptr<Icebreakers> icebreakers, std::shared_ptr<Ships> ships)
-    : date_to_graph(std::move(date_to_graph))
+PathManager::PathManager(DatesToIceGraph date_to_graph_, std::shared_ptr<Icebreakers> icebreakers, std::shared_ptr<Ships> ships)
+    : date_to_graph(std::move(date_to_graph_))
     , icebreakers(std::move(icebreakers))
     , ships(std::move(ships))
 {
-    // distances = DistanceMatrixByGraph(graph);
-    for (auto& [date, graph] : date_to_graph) {
-        date_to_distances.insert({date, DistanceMatrixByGraph(graph)});
+    std::vector<std::thread> threads;
+    std::mutex date_to_distances_mutex;
+    
+    size_t thread_limit = 4;
+    for (auto& [date, ice_graphs] : date_to_graph) {
+        const auto thread_func = [&]() mutable {
+            std::array<DistanceMatrix, GRAPH_CLASSES_AMOUNT> ice_distances_mtrx = {
+                DistanceMatrixByGraph(ice_graphs[0]),
+                DistanceMatrixByGraph(ice_graphs[1]),
+                DistanceMatrixByGraph(ice_graphs[2]),
+                DistanceMatrixByGraph(ice_graphs[3]),
+                DistanceMatrixByGraph(ice_graphs[4]),
+                DistanceMatrixByGraph(ice_graphs[5]),
+                DistanceMatrixByGraph(ice_graphs[6])
+            };
+
+            std::cout << "new date insert: " << date << std::endl;
+            date_to_distances_mutex.lock();
+            date_to_distances.insert({date, std::move(ice_distances_mtrx)});
+            date_to_distances_mutex.unlock();
+        };
+
+        threads.push_back(std::thread{thread_func});
+        
+        if (threads.size() == thread_limit) {
+            for (auto& th : threads) {
+                th.join();
+            }
+            thread_limit += 4;
+        }
     }
 
-    // c(i, k) + d(k, j)
+    for (auto& th : threads) {
+        th.join();
+    }
 }
 
 // build path to point, return next step
 Voyage PathManager::sail2point(const Icebreaker &icebreaker, VertID point) {
-    auto next_vertex = GetNextVertexInShortestPath(icebreaker.cur_pos, icebreaker.ice_class, icebreaker.speed, point);
-    
+    auto next_vertex = GetNextVertexInShortestPath(icebreaker.cur_pos, icebreaker, point);
+
+    size_t icebreaker_graph_index = GetIcebreakerIndexByName(icebreaker.name);
+
     auto okay_date = GetCurrentOkayDateByTime(cur_time);
-    auto& graph = date_to_graph[okay_date];
+    auto& graph = date_to_graph[okay_date].at(icebreaker_graph_index);
 
     Voyage voyage;
     voyage.start_time = cur_time;
     voyage.start_point = icebreaker.cur_pos;
-    voyage.end_time = cur_time + GetEdgeLen(graph, icebreaker.cur_pos, next_vertex) /
-                                     (24 * GetMinimalSpeedInCaravan(icebreaker.caravan));
+    // GetEdgeLen возвращает для ледоколов ВРЕМЯ, поэтому все ок, ни на что делить не нужно
+    if (icebreaker.caravan.ships_id.empty()) {
+        // если караван пустой, скорость складывается только из веса ребер
+        voyage.end_time = cur_time + GetEdgeLen(graph, icebreaker.cur_pos, next_vertex);
+    } else {
+        auto [edge, found] = boost::edge(icebreaker.cur_pos, next_vertex, graph);
+        voyage.end_time = cur_time + GetEdgeLen(graph, icebreaker.cur_pos, next_vertex) / GetMinimalSpeedInCaravan(icebreaker.caravan, graph[edge].ice_type);
+    }
+
     voyage.end_point = next_vertex;
 
     icebreaker_to_voyage[icebreaker.id] = voyage;
@@ -138,7 +126,7 @@ Voyage PathManager::sail2depots(const Icebreaker &icebreaker) {
 
     // тут должно быть оптимальное построение пути по всем точкам (задача коммивояжера), но пока здесь путь до первой попавшейся
     if (!all_caravan_end_points.empty()) {
-        auto [next, new_dist] = GetNearestVertex(icebreaker.cur_pos, all_caravan_end_points);
+        auto [next, new_dist] = GetNearestVertex(icebreaker.cur_pos, icebreaker, all_caravan_end_points);
         auto res = sail2point(icebreaker, next);
         icebreaker_to_voyage[icebreaker.id] = res;
         for (auto &ship_id: icebreaker.caravan.ships_id)
@@ -160,19 +148,51 @@ Voyage PathManager::getCurrentVoyage(IcebreakerId icebreaker_id) {
     return {};
 }
 
-VertID PathManager::GetNextVertexInShortestPath(VertID current, IceClass ice_class, float speed, VertID end) const {
+VertID PathManager::GetNextVertexInShortestPath(VertID current, const Icebreaker& icebreaker, VertID end) const {
     float optimal_neighbour, optimal_metric = std::numeric_limits<float>::infinity();
     bool found = false;
 
+    size_t icebreaker_graph_index = GetIcebreakerIndexByName(icebreaker.name);
+
     auto okay_date = GetCurrentOkayDateByTime(cur_time);
-    auto& graph = date_to_graph.at(okay_date);
-    auto& distances = date_to_distances.at(okay_date);
+    auto& graph = date_to_graph.at(okay_date).at(icebreaker_graph_index);
+    auto& distances = date_to_distances.at(okay_date).at(icebreaker_graph_index);
 
     for (auto neighbour : boost::make_iterator_range(boost::out_edges(current, graph))) {
         int target = boost::target(neighbour, graph);
 
-        // TODO: STUPID, TIME AND DISTANCE AT THE SAME TIME
-        auto metric = GetEdgeLen(graph, current, target) /  + distances[target][end];
+        // важно: веса на графе для ледоколов УЖЕ ПОСЧИТАНЫ С УЧЕТОМ ИХ СКОРОСТЕЙ, в весах - время прохождения
+        auto metric = GetEdgeLen(graph, current, target) + distances[target][end];
+
+        if (!found || metric < optimal_metric) {
+            optimal_neighbour = target;
+            optimal_metric = metric;
+            found = true;
+        }
+    }
+
+    if (!found) {
+        throw std::runtime_error("lol no optimal path from " + std::to_string(current) + " to " + std::to_string(end));
+    }
+
+    return optimal_neighbour;
+}
+
+VertID PathManager::GetNextVertexInShortestPath(VertID current, const Ship& ship, VertID end) const {
+    float optimal_neighbour, optimal_metric = std::numeric_limits<float>::infinity();
+    bool found = false;
+
+    size_t ship_graph_index = ship_class_to_index.at(ship.ice_class);
+
+    auto okay_date = GetCurrentOkayDateByTime(cur_time);
+    auto& graph = date_to_graph.at(okay_date).at(ship_graph_index);
+    auto& distances = date_to_distances.at(okay_date).at(ship_graph_index);
+
+    for (auto neighbour : boost::make_iterator_range(boost::out_edges(current, graph))) {
+        int target = boost::target(neighbour, graph);
+
+        // важно: если веса в ледоколах уже посчитаны в единицах измерения времени, то для кораблей учтены только их дебафы, поэтому добавляем доп. деление на скорость корабля
+        auto metric = GetEdgeLen(graph, current, target) / ship.speed + distances[target][end] / ship.speed;
         
         if (!found || metric < optimal_metric) {
             optimal_neighbour = target;
@@ -188,23 +208,55 @@ VertID PathManager::GetNextVertexInShortestPath(VertID current, IceClass ice_cla
     return optimal_neighbour;
 }
 
-float PathManager::GetMinimalSpeedInCaravan(const Caravan& caravan) const {
+float PathManager::GetMinimalSpeedInCaravan(const Caravan& caravan, int edge_ice_type) const {
     float min_speed = (*icebreakers)[caravan.icebreaker_id.id].speed;
     for (auto ship_id : caravan.ships_id) {
-        min_speed = std::min(min_speed, (*ships)[ship_id.id].speed);
+        auto ship = (*ships)[ship_id.id];
+        float speed = ship.speed;
+        int ice_class = static_cast<int>(ship.ice_class);
+        // частные случаи из таблицы из ТЗ
+        if (ice_class >= static_cast<int>(IceClass::kNoIceClass) || ice_class <= static_cast<int>(IceClass::kArc3)) {
+            if (edge_ice_type == 1) {
+                speed *= 0.5;
+            } else if (edge_ice_type == 2) {
+                // вообще, такое движение НЕВОЗМОЖНО! пусть будет runtime_error
+                throw std::runtime_error(ship.name + " не может быть проведен даже под караваном");
+            }
+        }
+        else if (ice_class >= static_cast<int>(IceClass::kArc4) || ice_class <= static_cast<int>(IceClass::kArc6)) {
+            if (edge_ice_type == 1) {
+                speed *= 0.8;
+            } else if (edge_ice_type == 2) {
+                speed *= 0.7;
+            }
+        }
+        else if (ice_class == static_cast<int>(IceClass::kArc7)) {
+            if (edge_ice_type == 1) {
+                speed *= 0.6;
+            } else if (edge_ice_type == 2) {
+                speed *= 0.15;
+            }
+        }
+
+        min_speed = std::min(min_speed, speed);
     }
 
     return min_speed;
 }
 
-std::pair<VertID, float> PathManager::GetNearestVertex(VertID source, const std::vector<VertID>& vertexes) const {
+std::pair<VertID, float> PathManager::GetNearestVertex(VertID source, const Icebreaker& icebreaker, const std::vector<VertID>& vertexes) const {
     if (vertexes.empty()) {
         throw std::runtime_error("GetNearestVertex(): unable to process empty vertexes vector");
     }
 
     auto okay_date = GetCurrentOkayDateByTime(cur_time);
-    auto& graph = date_to_graph.at(okay_date);
-    auto& distances = date_to_distances.at(okay_date);
+
+    std::cout << "okay_date: " << okay_date << std::endl;
+    for (const auto& [date, _] : date_to_distances) {
+        std::cout << date << " ";
+    } std::cout << std::endl;
+
+    auto& distances = date_to_distances.at(okay_date)[GetIcebreakerIndexByName(icebreaker.name)];
 
     VertID nearest = vertexes.front();
     for (size_t i = 1; i < vertexes.size(); ++i) {
@@ -216,7 +268,25 @@ std::pair<VertID, float> PathManager::GetNearestVertex(VertID source, const std:
     return std::make_pair(nearest, distances[source][nearest]);
 }
 
-float PathManager::PathDistance(VertID start, std::vector<VertID> points) const {
+std::pair<VertID, float> PathManager::GetNearestVertex(VertID source, const Ship& ship, const std::vector<VertID>& vertexes) const {
+    if (vertexes.empty()) {
+        throw std::runtime_error("GetNearestVertex(): unable to process empty vertexes vector");
+    }
+
+    auto okay_date = GetCurrentOkayDateByTime(cur_time);
+    auto& distances = date_to_distances.at(okay_date)[ship_class_to_index.at(ship.ice_class)];
+
+    VertID nearest = vertexes.front();
+    for (size_t i = 1; i < vertexes.size(); ++i) {
+        if (distances[source][vertexes[i]] < distances[source][nearest]) {
+            nearest = vertexes[i];
+        }
+    }
+
+    return std::make_pair(nearest, distances[source][nearest]);
+}
+
+float PathManager::PathDistance(VertID start, const Icebreaker& icebreaker, std::vector<VertID> points) const {
     if (points.empty()) {
         throw std::runtime_error("PathDistance(): unable to process empty vertexes vector");
     }
@@ -224,7 +294,7 @@ float PathManager::PathDistance(VertID start, std::vector<VertID> points) const 
     float distance = 0;
     VertID cur_point = start;
     for (size_t i = 0; i < points.size(); ++i) {
-        auto [next, new_dist] = GetNearestVertex(cur_point, points);
+        auto [next, new_dist] = GetNearestVertex(cur_point, icebreaker, points);
         points.erase(std::find(points.begin(), points.end(), next));
         distance += new_dist;
         cur_point = next;
@@ -242,12 +312,18 @@ std::string PathManager::GetCurrentOkayDateByTime(Days time) const {
 
     std::vector<std::pair<Days, std::string>> dates;
     for (const auto& [date_str, graph] : date_to_graph) {
-        int day, year; char month[4];
-        scanf(date_str.data(), "%d-%s-%d", &day, month, &year);
-        int month_days = months[std::string{month}];
+        std::vector<std::string> splitted_date;
+        boost::split(splitted_date, date_str, [](char c) { return c == '-'; });
+
+        int day = std::stoi(splitted_date[0]);
+        int month_days = months[splitted_date[1]];
+        int year = std::stoi(splitted_date[2]);
+
         Days total_days = 2 * 365 + (year - 1900) * 365 + (30/*високосные года*/) + /*на самом деле считается с 1899 30 декабря*/1 + month_days + day;
         dates.push_back({total_days, date_str});
     }
+
+    std::sort(dates.begin(), dates.end(), [](const auto& el, const auto& el2) { return el.first < el2.first; });
 
     for (size_t i = 0; i < dates.size() - 1; ++i) {
         if (time >= dates[i].first && time <= dates[i + 1].first) {
@@ -257,6 +333,13 @@ std::string PathManager::GetCurrentOkayDateByTime(Days time) const {
                 return dates[i + 1].second;
             }
         }
+    }
+    
+    // не нашли, значит time - либо раньше самой первой карты, либо позже самой последней
+    if (time < dates.front().first) {
+        return dates.front().second;
+    } else if (time > dates.back().first) {
+        return dates.back().second;
     }
 
     throw std::runtime_error("lol no okay date!");

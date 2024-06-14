@@ -27,10 +27,10 @@ float weightShipForIcebreaker(const Icebreaker &icebreaker, const Ship &ship, co
     for (const auto& ship_id : icebreaker.caravan.ships_id)
         cur_route.push_back(pm.ships.get()->at(ship_id.id).finish);
     if (!cur_route.empty()) {
-        float dist1 = pm.PathDistance(icebreaker.cur_pos, cur_route);
-        float dist_to_pickup = pm.PathDistance(icebreaker.cur_pos, {ship.cur_pos});
+        float dist1 = pm.PathDistance(icebreaker.cur_pos, icebreaker, cur_route);
+        float dist_to_pickup = pm.PathDistance(icebreaker.cur_pos, icebreaker, {ship.cur_pos});
         cur_route.push_back(ship.finish);
-        float dist_to_finish = pm.PathDistance(icebreaker.cur_pos, cur_route);
+        float dist_to_finish = pm.PathDistance(icebreaker.cur_pos, icebreaker, cur_route);
         longination_coef = dist1 / (dist_to_pickup + dist_to_finish); // smaller/bigger
     }
 
@@ -49,7 +49,7 @@ float weightIcebreaker(const Icebreaker &icebreaker, const PathManager &pm, cons
         }
     }
     if (!waiting_positions.empty()) {
-        auto [vertex, distance] = pm.GetNearestVertex(icebreaker.cur_pos, waiting_positions);
+        auto [vertex, distance] = pm.GetNearestVertex(icebreaker.cur_pos, icebreaker, waiting_positions);
         float dist_coef = distance * (0.5 + 0.5 * caravan_coef);
         return dist_coef;
     }
