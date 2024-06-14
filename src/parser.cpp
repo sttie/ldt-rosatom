@@ -183,10 +183,10 @@ DatesToIceGraph ParseGraphFromJson(
         property.len = edge_json.at("len").get<float>();
 
         for (const auto& [date, type_val_json] : edge_json.at("type").items()) {
-            int ice_type = type_val_json.get<int>();
-            
-            auto ship_debuffs = GetShipIceDebuff(ice_type);
-            auto icebreakers_speeds = GetIcebreakerSpeed(ice_type, *icebreakers);
+            property.ice_type = type_val_json.get<int>();
+
+            auto ship_debuffs = GetShipIceDebuff(property.ice_type);
+            auto icebreakers_speeds = GetIcebreakerSpeed(property.ice_type, *icebreakers);
             
             size_t graph_type_index = 0;
             for (float debuff : ship_debuffs) {
