@@ -60,7 +60,6 @@ int main() {
 
     std::cout << "ships has been read!" << std::endl;
 
-
     auto graph = parser::ParseGraphFromJson("../dataset/vertices.json", "../dataset/edges.json");
 
     /** Дополнительная подготовка данных **/

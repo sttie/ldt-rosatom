@@ -16,21 +16,36 @@
 
 enum class IceClass {
     kNoIceClass,
+    kArc1,
+    kArc2,
+    kArc3,
     kArc4,
     kArc5,
+    kArc6,
     kArc7,
+    kArc8,
     kArc9
 };
 
 inline IceClass FromStringToIceClass(const std::string& ice_class_str) {
     if (ice_class_str == "Нет") {
         return IceClass::kNoIceClass;
+    } else if (ice_class_str == "Arc 1") {
+        return IceClass::kArc1;
+    } else if (ice_class_str == "Arc 2") {
+        return IceClass::kArc2;
+    } else if (ice_class_str == "Arc 3") {
+        return IceClass::kArc3;
     } else if (ice_class_str == "Arc 4") {
         return IceClass::kArc4;
     } else if (ice_class_str == "Arc 5") {
         return IceClass::kArc5;
+    } else if (ice_class_str == "Arc 6") {
+        return IceClass::kArc6;
     } else if (ice_class_str == "Arc 7") {
         return IceClass::kArc7;
+    } else if (ice_class_str == "Arc 8") {
+        return IceClass::kArc8;
     } else if (ice_class_str == "Arc 9") {
         return IceClass::kArc9;
     }
@@ -41,10 +56,10 @@ inline IceClass FromStringToIceClass(const std::string& ice_class_str) {
 constexpr size_t ICE_WEEKS_AMOUNT = 1;
 
 struct IceGrid {
-    std::vector<std::vector<double>> lon;
-    std::vector<std::vector<double>> lat;
+    std::vector<std::vector<float>> lon;
+    std::vector<std::vector<float>> lat;
     
-    using Ice = std::vector<std::vector<double>>;
+    using Ice = std::vector<std::vector<float>>;
     std::array<Ice, ICE_WEEKS_AMOUNT> weekly_ice;
 };
 
@@ -58,8 +73,8 @@ struct PointId {
 
 struct GraphPoint {
     PointId point_id;
-    double latitude;
-    double longitude;
+    float latitude;
+    float longitude;
     std::string point_name;
 };
 
@@ -135,7 +150,7 @@ struct Caravan {
 struct Ship {
     ShipId id;
     std::string name;
-    double knot_speed; // on clean water!
+    float speed; // on clean water!
     IceClass ice_class;
     VertID cur_pos;
     Days voyage_start_date;
@@ -145,7 +160,7 @@ struct Ship {
 struct Icebreaker {
     IcebreakerId id;
     std::string name;
-    double knot_speed; // on clean water!
+    float speed; // on clean water!
     IceClass ice_class;
     VertID cur_pos;
     Caravan caravan;

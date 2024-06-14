@@ -6,7 +6,7 @@
 
 #include "structs.h"
 
-using EdgeWeightProperty = boost::property<boost::edge_weight_t, double>;
+using EdgeWeightProperty = boost::property<boost::edge_weight_t, float>;
 
 struct VertexProperty {
     float lat, lon;
@@ -15,7 +15,7 @@ struct VertexProperty {
 
 struct EdgeProperty {
     size_t start_id, end_id;
-    double len;
+    float len;
     int ice_type;
 };
 
@@ -30,14 +30,14 @@ using Graph = boost::adjacency_list<boost::vecS,
 using Path = std::vector<VertID>; // set of vertices
 using Routes = std::vector<std::vector<Path>>; // matrix of full path between every pair of vertices
 
-using DistanceProperty = boost::exterior_vertex_property<Graph, double>;
+using DistanceProperty = boost::exterior_vertex_property<Graph, float>;
 using DistanceMatrix = DistanceProperty::matrix_type;
 
 using DatesToGraph = std::unordered_map<std::string, Graph>;
 using DatesToDistances = std::unordered_map<std::string, DistanceMatrix>;
 
 template <typename Graph>
-inline auto GetEdgeWeight(
+inline auto GetEdgeLen(
         const Graph& graph,
         typename boost::graph_traits<Graph>::vertex_descriptor v1,
         typename boost::graph_traits<Graph>::vertex_descriptor v2) {
@@ -72,11 +72,12 @@ public:
     Voyage getCurrentVoyage(ShipId ship_id);
     Voyage getCurrentVoyage(IcebreakerId icebreaker_id);
 
-    std::pair<VertID, double> GetNearestVertex(VertID source, const std::vector<VertID>& vertexes) const;
-    double PathDistance(VertID start, std::vector<VertID> points) const;
+    std::pair<VertID, float> GetNearestVertex(VertID source, const std::vector<VertID>& vertexes) const;
+    float PathDistance(VertID start, std::vector<VertID> points) const;
 
 private:
-    VertID GetNextVertexInShortestPath(VertID current, VertID end) const;
-    double GetMinimalSpeedInCaravan(const Caravan& caravan) const;
+    VertID GetNextVertexInShortestPath(VertID current, IceClass ice_class, float speed, VertID end) const;
+    float GetMinimalSpeedInCaravan(const Caravan& caravan) const;
+    std::string GetCurrentOkayDateByTime(Days time) const;
 };
 

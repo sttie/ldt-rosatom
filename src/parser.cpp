@@ -68,18 +68,18 @@ GraphPointsInfo ParseGraphPointsFromExcel(const std::string& graph_filepath) {
         
         auto latitude_cell = wks.cell("B" + std::to_string(row));
         if (latitude_cell.value().type() == OpenXLSX::XLValueType::Integer) {
-            point.latitude = static_cast<double>(latitude_cell.value().get<int>());
+            point.latitude = static_cast<float>(latitude_cell.value().get<int>());
         } else if (latitude_cell.value().type() == OpenXLSX::XLValueType::Float) {
-            point.latitude = latitude_cell.value().get<double>();
+            point.latitude = latitude_cell.value().get<float>();
         } else {
             throw std::runtime_error("wtf is the type of latitude column (icebreaker)?..");
         }
 
         auto longitude_cell = wks.cell("C" + std::to_string(row));
         if (longitude_cell.value().type() == OpenXLSX::XLValueType::Integer) {
-            point.longitude = static_cast<double>(longitude_cell.value().get<int>());
+            point.longitude = static_cast<float>(longitude_cell.value().get<int>());
         } else if (longitude_cell.value().type() == OpenXLSX::XLValueType::Float) {
-            point.longitude = longitude_cell.value().get<double>();
+            point.longitude = longitude_cell.value().get<float>();
         } else {
             throw std::runtime_error("wtf is the type of knot_speed column (icebreaker)?..");
         }
@@ -162,17 +162,17 @@ IceGrid ParseIceGrid(const std::string& ice_filepath) {
         throw std::runtime_error("unable to open " + ice_filepath + " file");
     }
 
-    auto parse_coordinates = [&](std::vector<std::vector<double>>& parse_to, size_t sheet) {
+    auto parse_coordinates = [&](std::vector<std::vector<float>>& parse_to, size_t sheet) {
         auto wks = doc.workbook().worksheet(sheet);
         for (size_t i = 1; i <= ICE_MAP_ROWS; ++i) {
             for (size_t j = 1; j <= ICE_MAP_COLUMNS; ++j) {
                 auto val_cell = wks.cell(i, j);
-                double val;
+                float val;
 
                 if (val_cell.value().type() == OpenXLSX::XLValueType::Integer) {
-                    val = static_cast<double>(val_cell.value().get<int>());
+                    val = static_cast<float>(val_cell.value().get<int>());
                 } else if (val_cell.value().type() == OpenXLSX::XLValueType::Float) {
-                    val = val_cell.value().get<double>();
+                    val = val_cell.value().get<float>();
                 } else {
                     throw std::runtime_error("wtf is the type of (i, j) column (ice_grid)?..");
                 }
@@ -233,18 +233,24 @@ ShipsPtr ParseShipsSchedule(const std::string& dataset_path, const GraphPointsIn
         ship.ice_class = FromStringToIceClass(wks.cell("B" + std::to_string(row)).value().getString());
 
         auto knot_speed_cell = wks.cell("C" + std::to_string(row));
+        float knot_speed;
         if (knot_speed_cell.value().type() == OpenXLSX::XLValueType::Integer) {
-            ship.knot_speed = static_cast<double>(knot_speed_cell.value().get<int>());
+            knot_speed = static_cast<float>(knot_speed_cell.value().get<int>());
         } else if (knot_speed_cell.value().type() == OpenXLSX::XLValueType::Float) {
-            ship.knot_speed = knot_speed_cell.value().get<double>();
+            knot_speed = knot_speed_cell.value().get<float>();
         } else {
             throw std::runtime_error("wtf is the type of knot_speed column (ship)?..");
         }
+
+        // узлы -> м/ч
+        ship.speed = knot_speed * 1852;
 
         ship.cur_pos = getVertID(wks.cell("D" + std::to_string(row)).value().getString(), graph_points_info);
         ship.finish = getVertID(wks.cell("E" + std::to_string(row)).value().getString(), graph_points_info);
         ship.voyage_start_date = wks.cell("F" + std::to_string(row)).value().get<int>();
         ship.id = ShipId{index++};
+
+        std::cout << ship.name << " " << ship.voyage_start_date << std::endl;
         
         ships->push_back(std::move(ship));
     }
@@ -272,13 +278,16 @@ IcebreakersPtr ParseIcebreakers(const std::string& dataset_path, const GraphPoin
         icebreaker.name = wks.cell("C" + std::to_string(row)).value().getString();
         
         auto knot_speed_cell = wks.cell("D" + std::to_string(row));
+        float knot_speed;
         if (knot_speed_cell.value().type() == OpenXLSX::XLValueType::Integer) {
-            icebreaker.knot_speed = static_cast<double>(knot_speed_cell.value().get<int>());
+            knot_speed = static_cast<float>(knot_speed_cell.value().get<int>());
         } else if (knot_speed_cell.value().type() == OpenXLSX::XLValueType::Float) {
-            icebreaker.knot_speed = knot_speed_cell.value().get<double>();
+            knot_speed = knot_speed_cell.value().get<float>();
         } else {
             throw std::runtime_error("wtf is the type of knot_speed column (icebreaker)?..");
         }
+
+        icebreaker.speed = knot_speed * 1852;
 
         icebreaker.ice_class = FromStringToIceClass(wks.cell("E" + std::to_string(row)).value().getString());
         icebreaker.cur_pos = getVertID(wks.cell("F" + std::to_string(row)).value().getString(), graph_points_info);
