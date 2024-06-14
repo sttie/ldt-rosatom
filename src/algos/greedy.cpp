@@ -9,7 +9,7 @@ using WeightedShips = std::map<ShipId, float>; //todo
 
 using WeightedIcebreakers = std::map<IcebreakerId, float>; //todo
 
-const float score_threshold = 0.4;
+const float score_threshold = 0.2;
 
 float weightShipAlone(const Ship &ship, const Days &cur_time, float max_speed, float cur_max_waiting_time) {
     float
