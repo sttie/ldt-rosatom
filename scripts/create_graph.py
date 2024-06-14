@@ -5,6 +5,7 @@ import numpy as np
 from shapely.geometry import Point
 import math
 import json
+from collections import defaultdict
 
 excel_reader = pd.ExcelFile(r'dataset/ГрафДанные.xlsx', engine='openpyxl')
 df_ports = excel_reader.parse('points')
@@ -130,7 +131,40 @@ for index, edge in df_edges.iterrows():
             to_append = {}
             for key in cap:
                 to_append[key] = int(np.argmax(cap[key]))
-            edges_cap.append(to_append)  
+            edges_cap.append(to_append)
+    
+    for week in excel_reader.sheet_names[2:]: 
+        # 3 3 3 2 3 0 3 3 3 3 3
+        i = 0
+        while i < len(edges_cap) and edges_cap[i][week] == 3:
+            i+=1
+        if i >= len(edges_cap):
+            continue
+        c = edges_cap[i][week]
+        i-=1
+        while i >= 0:
+            edges_cap[i][week] = c
+            i-=1
+            
+        # 0 0 0 2 3 0 3 3 3 3 3
+        
+        i = len(edges_cap) - 1
+        while edges_cap[i][week] == 3:
+            i-=1
+        c = edges_cap[i][week]
+        i+=1
+        while i < len(edges_cap):
+            edges_cap[i][week] = c
+            i+=1
+        
+        # 0 0 0 2 3 0 0 0 0 0 0
+        
+        i = 0
+        
+        while i < len(edges_cap)-1:
+            if edges_cap[i+1][week] == 3:
+                edges_cap[i+1][week] = edges_cap[i][week]
+            i+=1
 
     saved_idxs = []
     for vertex_i in xxi[:-1]:
@@ -145,6 +179,59 @@ for index, edge in df_edges.iterrows():
 
     print("done: ", ii, " / ", len(df_edges))
     ii+=1
+    
+class Graph:
+    def __init__(self):
+        self.graph = defaultdict(list)
+        self.path = []
+        self.type = -1
+        self.end = False
+    def addEdge(self, u, v, w):
+        self.graph[u].append([v,w])
+        self.graph[v].append([u,w])
+    def DFSUtil(self, v, visited):
+        visited.add(v)
+        self.path.append(v)
+        for neighbour in self.graph[v]:
+            if v == 22 and neighbour[1] != 3:
+                continue
+            if v == 20 and neighbour[1] != 3:
+                continue
+            if self.end == False:
+                if neighbour[0] not in visited:
+                    if neighbour[1] != 3:
+                        self.path.append(neighbour[0])
+                        self.type = neighbour[1]
+                        self.end = True
+                        return
+                    self.DFSUtil(neighbour[0], visited)
+    def DFS(self, v):
+        visited = set()
+        self.DFSUtil(v, visited)
+
+for week in excel_reader.sheet_names[2:]:
+    g = Graph()
+    
+    for edge in new_edges:
+        g.addEdge(edge["start"], edge["end"], edge["type"][week])
+
+    for vertex in all_vertices:
+        g.path = []
+        g.type = -1
+        g.end = False
+        if vertex["name"] == "":
+            continue
+        check = False
+        for neighbour in g.graph[vertex["id"]]:
+            if neighbour[1] == 3:
+                check = True
+        if check:
+            g.DFS(vertex["id"])
+            if g.type != -1:
+                for i in range(len(g.path) - 1):
+                    for edge in new_edges:
+                        if edge["start"] == g.path[i] and edge["end"] == g.path[i+1] or edge["start"] == g.path[i+1] and edge["end"] == g.path[i]:
+                            edge["type"][week] = g.type
 
 with open("edges.json", "w") as f:
     json.dump(new_edges, f, ensure_ascii=False, indent=2)
