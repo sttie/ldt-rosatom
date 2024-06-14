@@ -34,10 +34,10 @@ using DistanceProperty = boost::exterior_vertex_property<Graph, float>;
 using DistanceMatrix = DistanceProperty::matrix_type;
 
 const std::unordered_map<std::string, size_t> icebreaker_name_to_index = {
-    {"50 лет победы", 3},
-    {"ямал", 4},
-    {"вайгач", 5},
-    {"таймыр", 6}
+    {"50 лет Победы", 3},
+    {"Ямал", 4},
+    {"Вайгач", 5},
+    {"Таймыр", 6}
 };
 
 const std::unordered_map<IceClass, size_t> ship_class_to_index = {

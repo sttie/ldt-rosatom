@@ -34,13 +34,29 @@ DistanceMatrix DistanceMatrixByGraph(Graph& graph) {
 Days GetWeekDay(Days time) {
     int day = static_cast<int>(time);
     float frac = time - static_cast<Days>(day);
-    std::cout << "got week day: " << static_cast<Days>(day % 7 + 1) + frac << std::endl;
     return static_cast<Days>(day % 7 + 1) + frac;
 }
 
 size_t GetIcebreakerIndexByName(const std::string& name) {
-    std::cout << "to_lower: " << boost::algorithm::to_lower_copy(name) << std::endl;
     return icebreaker_name_to_index.at(boost::algorithm::to_lower_copy(name));
+}
+
+void FloydWarshallThread(
+        const std::string& date, std::array<Graph, GRAPH_CLASSES_AMOUNT>& ice_graphs_,
+        std::mutex& date_to_distances_mutex, DatesToDistances& date_to_distances) {
+    std::array<DistanceMatrix, GRAPH_CLASSES_AMOUNT> ice_distances_mtrx = {
+        DistanceMatrixByGraph(ice_graphs_[0]),
+        DistanceMatrixByGraph(ice_graphs_[1]),
+        DistanceMatrixByGraph(ice_graphs_[2]),
+        DistanceMatrixByGraph(ice_graphs_[3]),
+        DistanceMatrixByGraph(ice_graphs_[4]),
+        DistanceMatrixByGraph(ice_graphs_[5]),
+        DistanceMatrixByGraph(ice_graphs_[6])
+    };
+
+    date_to_distances_mutex.lock();
+    date_to_distances.insert({date, std::move(ice_distances_mtrx)});
+    date_to_distances_mutex.unlock();
 }
 
 }
@@ -53,37 +69,14 @@ PathManager::PathManager(DatesToIceGraph date_to_graph_, std::shared_ptr<Icebrea
     std::vector<std::thread> threads;
     std::mutex date_to_distances_mutex;
     
-    size_t thread_limit = 4;
     for (auto& [date, ice_graphs] : date_to_graph) {
-        const auto thread_func = [&]() mutable {
-            std::array<DistanceMatrix, GRAPH_CLASSES_AMOUNT> ice_distances_mtrx = {
-                DistanceMatrixByGraph(ice_graphs[0]),
-                DistanceMatrixByGraph(ice_graphs[1]),
-                DistanceMatrixByGraph(ice_graphs[2]),
-                DistanceMatrixByGraph(ice_graphs[3]),
-                DistanceMatrixByGraph(ice_graphs[4]),
-                DistanceMatrixByGraph(ice_graphs[5]),
-                DistanceMatrixByGraph(ice_graphs[6])
-            };
-
-            std::cout << "new date insert: " << date << std::endl;
-            date_to_distances_mutex.lock();
-            date_to_distances.insert({date, std::move(ice_distances_mtrx)});
-            date_to_distances_mutex.unlock();
-        };
-
-        threads.push_back(std::thread{thread_func});
-        
-        if (threads.size() == thread_limit) {
-            for (auto& th : threads) {
-                th.join();
-            }
-            thread_limit += 4;
-        }
+        threads.push_back(std::thread{FloydWarshallThread,
+                                      std::cref(date), std::ref(ice_graphs),
+                                      std::ref(date_to_distances_mutex), std::ref(date_to_distances)});
     }
 
-    for (auto& th : threads) {
-        th.join();
+    for (auto& t : threads) {
+        t.join();
     }
 }
 
@@ -250,12 +243,6 @@ std::pair<VertID, float> PathManager::GetNearestVertex(VertID source, const Iceb
     }
 
     auto okay_date = GetCurrentOkayDateByTime(cur_time);
-
-    std::cout << "okay_date: " << okay_date << std::endl;
-    for (const auto& [date, _] : date_to_distances) {
-        std::cout << date << " ";
-    } std::cout << std::endl;
-
     auto& distances = date_to_distances.at(okay_date)[GetIcebreakerIndexByName(icebreaker.name)];
 
     VertID nearest = vertexes.front();

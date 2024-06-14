@@ -69,15 +69,7 @@ int main() {
     // /** Алгоритм **/
     PathManager pm(std::move(graph), icebreakers, ships);
 
-    Schedule res;
-    try {
-        res = algos::greedy(pm);
-    } catch (const std::exception& ex) {
-        std::cout << "error occured: " << ex.what() << std::endl;
-        int _; std::cin >> _;
-        exit(-1);
-    }
-
+    Schedule res = algos::greedy(pm);
     json res_json;
     res_json["icebreakers"] = json::array();
     for (int i = 0; i < (*icebreakers).size(); i++) {
