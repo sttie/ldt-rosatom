@@ -111,7 +111,7 @@ float GetDebuffUnderProvodka(IceClass ice_class, int edge_ice_type) {
         }
     }
 
-    throw std::runtime_error("invalid ice_class debuff under provodka");
+    throw std::runtime_error("invalid ice_class debuff under provodka: ice_class=" + std::to_string(ice_class_int) + ", edge_ice_type=" + std::to_string(edge_ice_type));
 }
 
 }
