@@ -306,8 +306,6 @@ ShipsPtr ParseShipsSchedule(const std::string& dataset_path, const GraphPointsIn
         ship.finish = getVertID(wks.cell("E" + std::to_string(row)).value().getString(), graph_points_info);
         ship.voyage_start_date = wks.cell("F" + std::to_string(row)).value().get<int>();
         ship.id = ShipId{index++};
-
-        std::cout << ship.name << " " << ship.voyage_start_date << std::endl;
         
         ships->push_back(std::move(ship));
     }
