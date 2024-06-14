@@ -66,11 +66,11 @@ std::array<float, 4> GetIcebreakerSpeed(int ice_type, const std::vector<Icebreak
     if (ice_type == 0) {
         return {icebreakers[0].speed, icebreakers[1].speed, icebreakers[2].speed, icebreakers[3].speed};
     } else if (ice_type == 1) {
-        return {19.0f * 1852.0f / 24.0f, 19.0f * 1852.0f / 24.0f, 19.0f * 0.9f * 1852.0f / 24.0f, 19.0f * 0.9f * 1852.0f / 24.0f};
+        return {19.0f * 1852.0f * 24.0f, 19.0f * 1852.0f * 24.0f, 19.0f * 0.9f * 1852.0f * 24.0f, 19.0f * 0.9f * 1852.0f * 24.0f};
     } else if (ice_type == 2) {
-        return {14.0f * 1852.0f / 24.0f, 14.0f * 1852.0f / 24.0f, 14.0f * 0.75f * 1852.0f / 24.0f, 14.0f * 0.75f * 1852.0f / 24.0f};
+        return {14.0f * 1852.0f * 24.0f, 14.0f * 1852.0f * 24.0f, 14.0f * 0.75f * 1852.0f * 24.0f, 14.0f * 0.75f * 1852.0f * 24.0f};
     } else if (ice_type == 3) {
-        return {0.0f * 1852.0f / 24.0f, 0.0f * 1852.0f / 24.0f, 0.0f * 1852.0f / 24.0f, 0.f * 1852.0f / 24.0f};
+        return {0.0f * 1852.0f * 24.0f, 0.0f * 1852.0f * 24.0f, 0.0f * 1852.0f * 24.0f, 0.f * 1852.0f * 24.0f};
     }
 
     throw std::runtime_error("invalid ice_type: " + std::to_string(ice_type));
@@ -300,7 +300,7 @@ ShipsPtr ParseShipsSchedule(const std::string& dataset_path, const GraphPointsIn
         }
 
         // узлы -> м/ч
-        ship.speed = knot_speed * 1852.0f / 24.0f; // скорость в метрах/день
+        ship.speed = knot_speed * 1852.0f * 24.0f; // скорость в метрах/день
 
         ship.cur_pos = getVertID(wks.cell("D" + std::to_string(row)).value().getString(), graph_points_info);
         ship.finish = getVertID(wks.cell("E" + std::to_string(row)).value().getString(), graph_points_info);
@@ -344,7 +344,7 @@ IcebreakersPtr ParseIcebreakers(const std::string& dataset_path, const GraphPoin
             throw std::runtime_error("wtf is the type of knot_speed column (icebreaker)?..");
         }
 
-        icebreaker.speed = knot_speed * 1852.0f / 24.0f;
+        icebreaker.speed = knot_speed * 1852.0f * 24.0f;
 
         icebreaker.ice_class = FromStringToIceClass(wks.cell("E" + std::to_string(row)).value().getString());
         icebreaker.cur_pos = getVertID(wks.cell("F" + std::to_string(row)).value().getString(), graph_points_info);

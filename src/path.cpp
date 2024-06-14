@@ -210,7 +210,7 @@ float PathManager::GetMinimalSpeedInCaravan(const Caravan& caravan, int edge_ice
         // частные случаи из таблицы из ТЗ
         if (ice_class >= static_cast<int>(IceClass::kNoIceClass) || ice_class <= static_cast<int>(IceClass::kArc3)) {
             if (edge_ice_type == 1) {
-                speed *= 0.5;
+                speed *= 0.5f;
             } else if (edge_ice_type == 2) {
                 // вообще, такое движение НЕВОЗМОЖНО! пусть будет runtime_error
                 throw std::runtime_error(ship.name + " не может быть проведен даже под караваном");
@@ -218,16 +218,16 @@ float PathManager::GetMinimalSpeedInCaravan(const Caravan& caravan, int edge_ice
         }
         else if (ice_class >= static_cast<int>(IceClass::kArc4) || ice_class <= static_cast<int>(IceClass::kArc6)) {
             if (edge_ice_type == 1) {
-                speed *= 0.8;
+                speed *= 0.8f;
             } else if (edge_ice_type == 2) {
-                speed *= 0.7;
+                speed *= 0.7f;
             }
         }
         else if (ice_class == static_cast<int>(IceClass::kArc7)) {
             if (edge_ice_type == 1) {
-                speed *= 0.6;
+                speed *= 0.6f;
             } else if (edge_ice_type == 2) {
-                speed *= 0.15;
+                speed *= 0.15f;
             }
         }
 
