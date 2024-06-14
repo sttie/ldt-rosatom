@@ -180,7 +180,7 @@ DatesToIceGraph ParseGraphFromJson(
         EdgeProperty property;
         property.start_id = edge_json.at("start").get<size_t>();
         property.end_id = edge_json.at("end").get<size_t>();
-        float len = edge_json.at("len").get<float>();
+        property.len = edge_json.at("len").get<float>();
 
         for (const auto& [date, type_val_json] : edge_json.at("type").items()) {
             int ice_type = type_val_json.get<int>();
@@ -193,7 +193,7 @@ DatesToIceGraph ParseGraphFromJson(
                 if (debuff == 0.0f) {
                     property.weight = std::numeric_limits<float>::infinity();
                 } else {
-                    property.weight = len / debuff;
+                    property.weight = property.len / debuff;
                 }
 
                 boost::add_edge(property.start_id, property.end_id, property, date_to_graph[date][graph_type_index++]);
@@ -202,7 +202,7 @@ DatesToIceGraph ParseGraphFromJson(
                 if (icebreaker_speed == 0.0f) {
                     property.weight = std::numeric_limits<float>::infinity();
                 } else {
-                    property.weight = len / icebreaker_speed;
+                    property.weight = property.len / icebreaker_speed;
                 }
 
                 boost::add_edge(property.start_id, property.end_id, property, date_to_graph[date][graph_type_index++]);

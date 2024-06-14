@@ -16,6 +16,8 @@ struct VertexProperty {
 struct EdgeProperty {
     size_t start_id, end_id;
     int ice_type;
+    float len;
+
     float weight;
 };
 
@@ -57,7 +59,7 @@ constexpr size_t GRAPH_CLASSES_AMOUNT = 7;
 using DatesToIceGraph = std::unordered_map<std::string, std::array<Graph, GRAPH_CLASSES_AMOUNT>>;
 using DatesToDistances = std::unordered_map<std::string, std::array<DistanceMatrix, GRAPH_CLASSES_AMOUNT>>;
 
-inline auto GetEdgeLen(
+inline auto GetEdgeWeight(
         const Graph& graph,
         typename boost::graph_traits<Graph>::vertex_descriptor v1,
         typename boost::graph_traits<Graph>::vertex_descriptor v2) {
@@ -67,7 +69,18 @@ inline auto GetEdgeLen(
     }
 
     return graph[edge].weight;
-    // return boost::get(boost::edge_weight_t(), graph, edge);
+}
+
+inline auto GetEdgeLen(
+        const Graph& graph,
+        typename boost::graph_traits<Graph>::vertex_descriptor v1,
+        typename boost::graph_traits<Graph>::vertex_descriptor v2) {
+    auto [edge, found] = boost::edge(v1, v2, graph);
+    if (!found) {
+        throw std::runtime_error("no such edge between " + std::to_string(v1) + " and " + std::to_string(v2));
+    }
+
+    return graph[edge].len;
 }
 
 class PathManager {

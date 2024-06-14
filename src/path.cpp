@@ -92,10 +92,10 @@ Voyage PathManager::sail2point(const Icebreaker &icebreaker, VertID point) {
     Voyage voyage;
     voyage.start_time = cur_time;
     voyage.start_point = icebreaker.cur_pos;
-    // GetEdgeLen возвращает для ледоколов ВРЕМЯ, поэтому все ок, ни на что делить не нужно
+    // GetEdgeWeight возвращает для ледоколов ВРЕМЯ, поэтому все ок, ни на что делить не нужно
     if (icebreaker.caravan.ships_id.empty()) {
         // если караван пустой, скорость складывается только из веса ребер
-        voyage.end_time = cur_time + GetEdgeLen(graph, icebreaker.cur_pos, next_vertex);
+        voyage.end_time = cur_time + GetEdgeWeight(graph, icebreaker.cur_pos, next_vertex);
     } else {
         auto [edge, found] = boost::edge(icebreaker.cur_pos, next_vertex, graph);
         voyage.end_time = cur_time + GetEdgeLen(graph, icebreaker.cur_pos, next_vertex) / GetMinimalSpeedInCaravan(icebreaker.caravan, graph[edge].ice_type);
@@ -155,7 +155,7 @@ VertID PathManager::GetNextVertexInShortestPath(VertID current, const Icebreaker
         int target = boost::target(neighbour, graph);
 
         // важно: веса на графе для ледоколов УЖЕ ПОСЧИТАНЫ С УЧЕТОМ ИХ СКОРОСТЕЙ, в весах - время прохождения
-        auto metric = GetEdgeLen(graph, current, target) + distances[target][end];
+        auto metric = GetEdgeWeight(graph, current, target) + distances[target][end];
 
         if (!found || metric < optimal_metric) {
             optimal_neighbour = target;
@@ -185,7 +185,7 @@ VertID PathManager::GetNextVertexInShortestPath(VertID current, const Ship& ship
         int target = boost::target(neighbour, graph);
 
         // важно: если веса в ледоколах уже посчитаны в единицах измерения времени, то для кораблей учтены только их дебафы, поэтому добавляем доп. деление на скорость корабля
-        auto metric = GetEdgeLen(graph, current, target) / ship.speed + distances[target][end] / ship.speed;
+        auto metric = GetEdgeWeight(graph, current, target) / ship.speed + distances[target][end] / ship.speed;
         
         if (!found || metric < optimal_metric) {
             optimal_neighbour = target;
