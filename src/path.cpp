@@ -243,6 +243,8 @@ std::pair<VertID, float> PathManager::GetNextVertexInShortestPath(VertID current
 
                 float debuff = GetDebuffUnderProvodka((*ships)[min_ship_id].ice_class, graph[edge].ice_type);
                 if (debuff == 0.0f) {
+                    std::cout << int((*ships)[min_ship_id].ice_class) << " " << graph[edge].ice_type << std::endl;
+                    exit(0);
                     metric = std::numeric_limits<float>::infinity();
                 } else {
                 /* SHIP */ metric = GetEdgeLen(graph, current, target) / (minimal_caravan_speed * debuff)
