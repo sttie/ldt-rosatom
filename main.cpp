@@ -8,6 +8,8 @@
 #include "algos/algos.h"
 
 #include <boost/graph/graphviz.hpp>
+#include <json.hpp>
+using json = nlohmann::json;
 
 void GenerateGraph(Graph& graph) {
     boost::add_edge(5, 1, 116.74, graph);
@@ -83,16 +85,35 @@ int main() {
     PathManager pm(graph, icebreakers, ships);
     Schedule res = algos::greedy(pm);
 
+    json res_json;
+    res_json["icebreakers"] = json::array();
+    for (int i = 0; i < (*icebreakers).size(); i++) {
+        res_json["icebreakers"].push_back({{"id",i}, {"path", json::array()}});
+    }
+
     std::ofstream schedule("schedule.txt");
     schedule << "schedule size: " << res.size() << std::endl;
     for (const auto& sch_atom: res) {
         auto start = sch_atom.edge_voyage.start_point, end = sch_atom.edge_voyage.end_point;
-        if (sch_atom.icebreaker_id.is_initialized())
-            schedule << "[" << std::to_string(sch_atom.icebreaker_id->id) << "] ";
+        if (sch_atom.icebreaker_id.is_initialized()){
+                std::vector<int> carvs;
+                for (auto it = sch_atom.ships_id.ships_id.begin(); it != sch_atom.ships_id.ships_id.end(); ++it) {
+                    carvs.push_back(it->id);
+                }
+                res_json["icebreakers"][sch_atom.icebreaker_id->id]["path"].push_back({
+                                                   {"caravan", carvs}, 
+                                                   {"start", start},
+                                                   {"end", end},
+                                                   {"start_time",sch_atom.edge_voyage.start_time},
+                                                   {"end_time", sch_atom.edge_voyage.end_time}});
+                schedule << "[" << std::to_string(sch_atom.icebreaker_id->id) << "] ";
+        }
         schedule << CaravanToString(sch_atom.ships_id) << ": " << start << " -> " << end;
         schedule << " (" << sch_atom.edge_voyage.start_time << ";" << sch_atom.edge_voyage.end_time << ")";
         schedule << "\n";
     }
+    std::ofstream o("schedule.json");
+    o << std::setw(4) << res_json << std::endl;
     schedule.close();
 
     std::cout << "done!" << std::endl;

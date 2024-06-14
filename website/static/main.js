@@ -79,7 +79,7 @@ $(function() {
 
 
   // lat long name
-  const ports = [{"id":0 ,"lat": 73.1, "lon": 80,     "name": "Бухта Север и Диксон"},
+  const ports = [{"id":0 ,"lat": 73.1, "lon": 80, "name": "Бухта Север и Диксон"},
   {"id":1 ,"lat": 69.4, "lon": 86.15	, "name": "Дудинка"},
   {"id":2 ,"lat": 69.9, "lon": 44.6	, "name": "кромка льда на Западе"},
   {"id":3 ,"lat": 69.15,"lon": 57.68	, "name": "Варандей-Приразломное"},
@@ -160,9 +160,6 @@ function drawPoint(x, y){
   // img1.src = 'static/main.png';
   };
 
-
-
-
   document.getElementById('import').onclick = function() {
     var files = document.getElementById('selectFiles').files;
   console.log(files);
@@ -179,17 +176,17 @@ function drawPoint(x, y){
     
     const ticks = new Set();
 
-    for(let i = 0; i < result["res"].length; i++){
-      for(let j = 0; j < result["res"][i]["path"].length; j++){
-        ticks.add(result["res"][i]["path"][j]["time_start"]);
-        ticks.add(result["res"][i]["path"][j]["time_end"]);
+    for(let i = 0; i < result["icebreakers"].length; i++){
+      for(let j = 0; j < result["icebreakers"][i]["path"].length; j++){
+        ticks.add(result["icebreakers"][i]["path"][j]["start_time"]);
+        ticks.add(result["icebreakers"][i]["path"][j]["end_time"]);
 
         for(let k = 0; k < edges.length; k++){
-          if((edges[k]["start"] == result["res"][i]["path"][j]["start_vertex_id"] && 
-          edges[k]["end"] == result["res"][i]["path"][j]["end_vertex_id"]) ||
-          (edges[k]["end"] == result["res"][i]["path"][j]["start_vertex_id"] && 
-          edges[k]["start"] == result["res"][i]["path"][j]["end_vertex_id"])) {
-            result["res"][i]["path"][j]["len"] = edges[k]["len"];
+          if((edges[k]["start"] == result["icebreakers"][i]["path"][j]["start"] && 
+          edges[k]["end"] == result["icebreakers"][i]["path"][j]["end"]) ||
+          (edges[k]["end"] == result["icebreakers"][i]["path"][j]["start"] && 
+          edges[k]["start"] == result["icebreakers"][i]["path"][j]["end"])) {
+            result["icebreakers"][i]["path"][j]["len"] = edges[k]["len"];
             break;
           }
         }
@@ -212,30 +209,28 @@ function drawPoint(x, y){
       console.log(canvas.width)
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      for(let i = 0; i < result["res"].length; i++){
+      for(let i = 0; i < result["icebreakers"].length; i++){
 
-        if(slideEvt.value < result["res"][i]["path"][0]["time_start"] || slideEvt.value > result["res"][i]["path"][result["res"][i]["path"].length - 1]["time_end"]){
+        if(slideEvt.value < result["icebreakers"][i]["path"][0]["start_time"] || slideEvt.value > result["icebreakers"][i]["path"][result["icebreakers"][i]["path"].length - 1]["end_time"]){
           continue;
         }
 
-        for(let j = 0; j < result["res"][i]["path"].length; j++) {
-          console.log(slideEvt.value);
-          if(result["res"][i]["path"][j]["time_start"] <= slideEvt.value && result["res"][i]["path"][j]["time_end"] >= slideEvt.value){
-            const time_taken = result["res"][i]["path"][j]["time_end"] - result["res"][i]["path"][j]["time_start"];
-            const path_length = result["res"][i]["path"][j]["len"];
+        for(let j = 0; j < result["icebreakers"][i]["path"].length; j++) {
+          if(result["icebreakers"][i]["path"][j]["start_time"] <= slideEvt.value && result["icebreakers"][i]["path"][j]["end_time"] >= slideEvt.value){
+            const time_taken = result["icebreakers"][i]["path"][j]["end_time"] - result["icebreakers"][i]["path"][j]["start_time"];
+            const path_length = result["icebreakers"][i]["path"][j]["len"];
 
             const vel =  path_length / time_taken;
 
-            const y = ports[result["res"][i]["path"][j]["start_vertex_id"]]["lat"] + 
-                      (ports[result["res"][i]["path"][j]["end_vertex_id"]]["lat"] - 
-                      ports[result["res"][i]["path"][j]["start_vertex_id"]]["lat"]) * vel * (slideEvt.value - result["res"][i]["path"][j]["time_start"]) / path_length;
+            const y = ports[result["icebreakers"][i]["path"][j]["start"]]["lat"] + 
+                      (ports[result["icebreakers"][i]["path"][j]["end"]]["lat"] - 
+                      ports[result["icebreakers"][i]["path"][j]["start"]]["lat"]) * vel * (slideEvt.value - result["icebreakers"][i]["path"][j]["start_time"]) / path_length;
 
-            const x = ports[result["res"][i]["path"][j]["start_vertex_id"]]["lon"] + 
-                      (ports[result["res"][i]["path"][j]["end_vertex_id"]]["lon"] - 
-                      ports[result["res"][i]["path"][j]["start_vertex_id"]]["lon"]) * vel * (slideEvt.value - result["res"][i]["path"][j]["time_start"]) / path_length;
+            const x = ports[result["icebreakers"][i]["path"][j]["start"]]["lon"] + 
+                      (ports[result["icebreakers"][i]["path"][j]["end"]]["lon"] - 
+                      ports[result["icebreakers"][i]["path"][j]["start"]]["lon"]) * vel * (slideEvt.value - result["icebreakers"][i]["path"][j]["start_time"]) / path_length;
 
             drawPoint(x,y);
-            console.log(x,y);
             break;
           }
         }

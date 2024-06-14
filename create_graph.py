@@ -261,5 +261,5 @@ for week in excel_reader.sheet_names[2:]:
         color= 'green' if edge["type"][week] == 0 else ('blue' if edge["type"][week] == 1 else ("yellow" if edge["type"][week] == 2 else "red"))
         plt.plot([all_vertices[edge["start"]]["lon"], all_vertices[edge["end"]]["lon"]], [all_vertices[edge["start"]]["lat"], all_vertices[edge["end"]]["lat"]], color=color, linewidth=0.3)
 
-    plt.savefig('dataset/main_' + str(idx) + '.jpg', bbox_inches='tight', dpi=1000, pad_inches=0.0)
+    plt.savefig('dataset/main_' + str(idx) + '.png', bbox_inches='tight', dpi=1000, pad_inches=0.0)
     idx+=1
