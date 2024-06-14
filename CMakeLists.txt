@@ -16,4 +16,5 @@ add_executable(scheduler
 target_include_directories(scheduler PUBLIC src)
 target_include_directories(scheduler PUBLIC third-party/boost)
 target_include_directories(scheduler PUBLIC third-party/boost/graph/include)
+target_include_directories(scheduler PUBLIC third-party/json/include/)
 target_link_libraries(scheduler OpenXLSX::OpenXLSX)

@@ -9,11 +9,11 @@ using WeightedShips = std::map<ShipId, float>; //todo
 
 using WeightedIcebreakers = std::map<IcebreakerId, float>; //todo
 
-const double score_threshold = 0.4;
+const float score_threshold = 0.4;
 
-float weightShipAlone(const Ship &ship, const Days &cur_time, float max_speed, double cur_max_waiting_time) {
+float weightShipAlone(const Ship &ship, const Days &cur_time, float max_speed, float cur_max_waiting_time) {
     float
-        w1 = 0, speed_coef = ship.knot_speed / max_speed,
+        w1 = 0, speed_coef = ship.speed / max_speed,
         w2 = 0.1, waiting_coef = cur_max_waiting_time != 0 ? (cur_time - ship.voyage_start_date) / cur_max_waiting_time : 0;
     return w1 * speed_coef + w2 * waiting_coef;
 }
@@ -27,10 +27,10 @@ float weightShipForIcebreaker(const Icebreaker &icebreaker, const Ship &ship, co
     for (const auto& ship_id : icebreaker.caravan.ships_id)
         cur_route.push_back(pm.ships.get()->at(ship_id.id).finish);
     if (!cur_route.empty()) {
-        double dist1 = pm.PathDistance(icebreaker.cur_pos, cur_route);
-        double dist_to_pickup = pm.PathDistance(icebreaker.cur_pos, {ship.cur_pos});
+        float dist1 = pm.PathDistance(icebreaker.cur_pos, cur_route);
+        float dist_to_pickup = pm.PathDistance(icebreaker.cur_pos, {ship.cur_pos});
         cur_route.push_back(ship.finish);
-        double dist_to_finish = pm.PathDistance(icebreaker.cur_pos, cur_route);
+        float dist_to_finish = pm.PathDistance(icebreaker.cur_pos, cur_route);
         longination_coef = dist1 / (dist_to_pickup + dist_to_finish); // smaller/bigger
     }
 
@@ -84,8 +84,8 @@ Schedule algos::greedy(PathManager &manager) {
     // calc max_speed
     float max_speed = 0;
     for (auto &ship: ships)
-        if (ship.knot_speed > max_speed)
-            max_speed = ship.knot_speed;
+        if (ship.speed > max_speed)
+            max_speed = ship.speed;
 
     std::map<IcebreakerId, ShipId> targeted;
     while (!timestamps.empty()) {
@@ -154,9 +154,9 @@ Schedule algos::greedy(PathManager &manager) {
         auto sorted_icebreaker = sortMapLess<IcebreakerId, float>(icebreakers_waiting);
 
         // calc max waiting time
-        double cur_max_wait = 0;
+        float cur_max_wait = 0;
         for (auto& [ship_id, _] : ships_waiting) {
-            double diff = manager.cur_time - ships[ship_id.id].voyage_start_date;
+            float diff = manager.cur_time - ships[ship_id.id].voyage_start_date;
             if (diff > cur_max_wait)
                 cur_max_wait = diff;
         }
