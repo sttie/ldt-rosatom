@@ -128,25 +128,26 @@ $(function() {
   {"id":46 ,"lat": 55.7, "lon": 164.25, "name": "Окно в Азию"}];
 
 
-  var lat_width = 180;
-  var lon_width = 30;
+  var lat_width = 30;
+  var lon_width = 180;
 
   // latitude from 20 to 200
-  // longitude from 55 to 90
+  // longitude from 55 to 85
 
   var lat_start = 20;
   var long_start = 55;
 
 function drawPoint(x, y){
-  ctx.fillRect((x - lat_start - 0.5) * cell_width, (canvas.height) - (y - long_start + 0.5) * cell_height, cell_width , cell_height)
+  ctx.fillRect((x - lat_start) * cell_width - cell_width / 2, (canvas.height) - (y - long_start) * cell_height - cell_width / 2, cell_width , cell_width)
 }
 
   if (canvas.getContext) {
     ctx = canvas.getContext('2d');
     var img1 = new Image();
 
-    var cell_width = canvas.width / lat_width;
-    var cell_height = canvas.height / lon_width;
+    var cell_width = canvas.width / lon_width;
+    var cell_height = canvas.height / lat_width;
+    console.log(cell_width, cell_height)
 
   //   img1.onload = function () {
   //     //draw background image

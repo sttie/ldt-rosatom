@@ -1,12 +1,12 @@
 #main {
     display: block;
     margin: 0 auto;
-    width: 2033px;
+    width: 2033.33px;
 }
 
 #myCanvas {
     background-image: url("main.png");
-    background-size: 2033px 990px;
+    background-size: 2033.33px 990.66px;
 }
 
 #mainslider {
