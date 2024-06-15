@@ -264,7 +264,7 @@ for week in excel_reader.sheet_names[2:]:
 
     for port in all_vertices:
         plt.scatter(port["lon"], port["lat"], s=1, marker='.', color='orange' if port["name"] == "" else 'purple', zorder=100)
-        plt.annotate(port["name"], (port["lon"], port["lat"]), fontsize=1)
+        plt.annotate("[" + str(port["id"]) + "]" +port["name"], (port["lon"], port["lat"]), fontsize=1, zorder=101)
     
     
 

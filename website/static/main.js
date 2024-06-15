@@ -171,6 +171,7 @@ function drawPoint(x, y){
   var fr = new FileReader();
 
   fr.onload = function(e) { 
+  var tasks = [];
   console.log(e);
     var result = JSON.parse(e.target.result);
     //var formatted = JSON.stringify(result, null, 2);
@@ -178,9 +179,20 @@ function drawPoint(x, y){
     const ticks = new Set();
 
     for(let i = 0; i < result["icebreakers"].length; i++){
+      let icebreaker_name = result["icebreakers"][i]["id"].toString();
       for(let j = 0; j < result["icebreakers"][i]["path"].length; j++){
-        ticks.add(result["icebreakers"][i]["path"][j]["start_time"]);
-        ticks.add(result["icebreakers"][i]["path"][j]["end_time"]);
+
+        tasks.push({row_id : result["icebreakers"][i]["id"], 
+                    start: result["icebreakers"][i]["path"][j]["start_time"],
+                    end: result["icebreakers"][i]["path"][j]["end_time"],
+                    progress: 0,
+                    name : '',
+                    custom_class: 'cc-blue',
+                    name: "{" + result["icebreakers"][i]["path"][j]["caravan"].toString() + "}"
+                  })
+
+        ticks.add(new Date(result["icebreakers"][i]["path"][j]["start_time"]).getTime() / 1000);
+        ticks.add(new Date(result["icebreakers"][i]["path"][j]["end_time"]).getTime() / 1000);
 
         for(let k = 0; k < edges.length; k++){
           if((edges[k]["start"] == result["icebreakers"][i]["path"][j]["start"] && 
@@ -195,41 +207,69 @@ function drawPoint(x, y){
       }
     }
 
-    const ticks_arr = Array.from(ticks).sort();
-    console.log(ticks_arr);
+    var gg = document.getElementById('t');
+    const tbl = document.createElement('table');
+    for (let i = 0; i < result["icebreakers"].length; i++){
+      const tr = tbl.insertRow();
+      const td = tr.insertCell();
+      td.appendChild(document.createTextNode("icb" + result["icebreakers"][i]["id"]));
+    }
+    gg.appendChild(tbl);
+
+    console.log(tasks);
+
+    var gantt = new Gantt("#gantt", tasks, {
+      view_mode : "Quarter Day",
+      readonly: true,
+      today_button: false});
+
+    var ticks_arr = Array.from(ticks);
+    ticks_arr.sort();
+
+    var node = document.getElementById('dateText');
+    node.textContent = new Date(ticks_arr[0] * 1000).toISOString();
 
     $("#slider").slider({
-      value: 0,
-      ticks: Array.from(ticks),
-      step: 0.1
+      value: ticks_arr[0],
+      ticks: ticks_arr,
+      step: 1440
     }, function(){
       $("#slider").css("display","block");
+      
     });
 
     $("#slider").on("slide", function(slideEvt) {
-      console.log(canvas.width)
+      console.log(canvas.width);
+      var node = document.getElementById('dateText');
+      node.textContent = new Date(slideEvt.value * 1000).toISOString();
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+      gantt.set_scroll_position(new Date(slideEvt.value * 1000));
+
       for(let i = 0; i < result["icebreakers"].length; i++){
+
+        
 
         if(slideEvt.value < result["icebreakers"][i]["path"][0]["start_time"] || slideEvt.value > result["icebreakers"][i]["path"][result["icebreakers"][i]["path"].length - 1]["end_time"]){
           continue;
         }
 
         for(let j = 0; j < result["icebreakers"][i]["path"].length; j++) {
-          if(result["icebreakers"][i]["path"][j]["start_time"] <= slideEvt.value && result["icebreakers"][i]["path"][j]["end_time"] >= slideEvt.value){
-            const time_taken = result["icebreakers"][i]["path"][j]["end_time"] - result["icebreakers"][i]["path"][j]["start_time"];
+          let start_time = new Date(result["icebreakers"][i]["path"][j]["start_time"]).getTime() / 1000;
+          let end_time = new Date(result["icebreakers"][i]["path"][j]["end_time"]).getTime() / 1000
+          if(start_time <= slideEvt.value && end_time >= slideEvt.value){
+            const time_taken = end_time - start_time;
             const path_length = result["icebreakers"][i]["path"][j]["len"];
 
             const vel =  path_length / time_taken;
 
             const y = ports[result["icebreakers"][i]["path"][j]["start"]]["lat"] + 
                       (ports[result["icebreakers"][i]["path"][j]["end"]]["lat"] - 
-                      ports[result["icebreakers"][i]["path"][j]["start"]]["lat"]) * vel * (slideEvt.value - result["icebreakers"][i]["path"][j]["start_time"]) / path_length;
+                      ports[result["icebreakers"][i]["path"][j]["start"]]["lat"]) * vel * (slideEvt.value - start_time) / path_length;
 
             const x = ports[result["icebreakers"][i]["path"][j]["start"]]["lon"] + 
                       (ports[result["icebreakers"][i]["path"][j]["end"]]["lon"] - 
-                      ports[result["icebreakers"][i]["path"][j]["start"]]["lon"]) * vel * (slideEvt.value - result["icebreakers"][i]["path"][j]["start_time"]) / path_length;
+                      ports[result["icebreakers"][i]["path"][j]["start"]]["lon"]) * vel * (slideEvt.value - start_time) / path_length;
 
             drawPoint(x,y);
             break;

@@ -13,4 +13,25 @@
     width: 1000px;
     margin: 0 auto;
     display:block;
+ 
+}
+.cc-blue g rect{
+    fill: #00bfff !important;
+}
+
+#gan{
+    display:inline-block;
+    width:900px;
+}
+
+#t{
+    display:inline-block;
+    width:50px;
+    vertical-align: top;
+    margin-top:74px;
+}
+
+#t td {
+    padding-top: 14.8px;
+    padding-bottom: 14.8px;
 }

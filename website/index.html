@@ -5,15 +5,18 @@
     <link rel="stylesheet" href="static/style.css">
     <link rel="stylesheet" href="static/bootstrap.min.css">
     <link rel="stylesheet" href="static/bootstrap-slider.css">
+    <link rel="stylesheet" href="static/frappe-gantt.css">
     <script src="static/jquery.min.js"></script>
     <script src="static/bootstrap.min.js"></script>
     <script src="static/bootstrap-slider.js"></script>
+    <script src="static/frappe-gantt.js"></script>
+
 </head>
 
 <body>
 
     <div id="main">
-        <canvas id="myCanvas" width="2033" height="990" style="border:1px solid #000000;">
+        <canvas id="myCanvas" width="2033.33" height="990.66" style="border:1px solid #000000;">
         </canvas>
     </div>
     
@@ -22,9 +25,26 @@
     <button id="import">Import</button>
 
     <div id="mainslider">
+        <div id="dateText"></div>
             <div id="slider" data-slider-id='mainSlider' type="text" style="display:None">
+    
+            </div>
+            <div id="g">
+                <div id="t">
+                    <table >
+
+                    </table>
+                </div>
+                <div id="gan">
+                    <svg id="gantt" class="dark"></svg>
+                </div>
+                
+            </div>
+            
     </div>
-    </div>
+
+
+
     <script src="static/main.js"></script>
 </body>
     
