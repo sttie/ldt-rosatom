@@ -109,8 +109,14 @@ public:
     std::pair<VertID, float> GetNearestVertex(VertID source, const Ship& ship, const std::vector<VertID>& vertexes) const;
     float PathDistance(VertID start, const Icebreaker& icebreaker, std::vector<VertID> points) const;
 
+    float TimeToArriveUnderFakeProvodka(const Ship& ship, VertID start, VertID end) const;
+    float TimeToArriveAlone(const Ship& ship, VertID start, VertID end) const;
+
+    std::vector<VertID> GetShortestPathAlone(const Ship& ship, VertID start, VertID end) const;
+
 private:
     std::pair<VertID, float> GetNextVertexInShortestPath(VertID current, const Icebreaker& icebreaker, VertID end) const;
+    std::pair<int, int> GetNextVertexInShortestPath(VertID current, const Ship& ship, VertID end) const;
 
     std::pair<float, int> GetMinimalSpeedInCaravan(const Caravan& caravan, int edge_ice_type) const;
     std::string GetCurrentOkayDateByTime(Days time) const;

@@ -52,9 +52,9 @@ std::array<float, 3> GetShipIceDebuff(int ice_type) {
     if (ice_type == 0) {
         return {1.0f, 1.0f, 1.0f};
     } else if (ice_type == 1) {
-        return {0.0f, 0.0f, 0.6f};
+        return {0.5f, 0.8f, 0.6f};
     } else if (ice_type == 2) {
-        return {0.0f, 0.0f, 0.0f};
+        return {0.0f, 0.7f, 0.15f};
     } else if (ice_type == 3) {
         return {0.0f, 0.0f, 0.0f};
     }
@@ -77,7 +77,6 @@ std::array<float, 4> GetIcebreakerSpeed(int ice_type, const std::vector<Icebreak
 }
 
 }
-
 
 GraphPointsInfo ParseGraphPointsFromExcel(const std::string& graph_filepath) {
     OpenXLSX::XLDocument doc{graph_filepath};
@@ -187,13 +186,17 @@ DatesToIceGraph ParseGraphFromJson(
 
             auto ship_debuffs = GetShipIceDebuff(property.ice_type);
             auto icebreakers_speeds = GetIcebreakerSpeed(property.ice_type, *icebreakers);
-            
+
             size_t graph_type_index = 0;
             for (float debuff : ship_debuffs) {
                 if (debuff == 0.0f) {
                     property.weight = std::numeric_limits<float>::infinity();
                 } else {
                     property.weight = property.len / debuff;
+                }
+
+                if (property.start_id == 202 && property.end_id == 25) {
+                    std::cout << "debuff: " << debuff << ", weight: " << property.weight << ", len: " << property.len << std::endl;
                 }
 
                 boost::add_edge(property.start_id, property.end_id, property, date_to_graph[date][graph_type_index++]);
@@ -203,6 +206,10 @@ DatesToIceGraph ParseGraphFromJson(
                     property.weight = std::numeric_limits<float>::infinity();
                 } else {
                     property.weight = property.len / icebreaker_speed;
+                }
+
+                if (property.start_id == 202 && property.end_id == 25) {
+                    std::cout << "icebreaker_speed: " << icebreaker_speed << ", weight: " << property.weight << ", len: " << property.len << std::endl;
                 }
 
                 boost::add_edge(property.start_id, property.end_id, property, date_to_graph[date][graph_type_index++]);
@@ -306,7 +313,7 @@ ShipsPtr ParseShipsSchedule(const std::string& dataset_path, const GraphPointsIn
         ship.finish = getVertID(wks.cell("E" + std::to_string(row)).value().getString(), graph_points_info);
         ship.voyage_start_date = wks.cell("F" + std::to_string(row)).value().get<int>();
         ship.id = ShipId{index++};
-        
+
         ships->push_back(std::move(ship));
     }
 
