@@ -111,12 +111,16 @@ PathManager::PathManager(DatesToIceGraph date_to_graph_, std::shared_ptr<Icebrea
     for (auto& t : threads) {
         t.join();
     }
+
+    // auto& distance = date_to_distances.at("26-May-2020").at(1);
+    // std::cout << std::to_string(distance[9][25]) << std::endl;
+    // exit(-1);
 }
 
 // build path to point, return next step
 Voyage PathManager::sail2point(const Icebreaker &icebreaker, VertID point) {
     auto [next_vertex, metric_to_vertex] = GetNextVertexInShortestPath(icebreaker.cur_pos, icebreaker, point);
-    std::cout << "!!! metric_to_vertex: " << metric_to_vertex << std::endl;
+    // std::cout << "!!! metric_to_vertex: " << metric_to_vertex << "cur: " << icebreaker.cur_pos << ", next: " << next_vertex << std::endl;
 
     size_t icebreaker_graph_index = GetIcebreakerIndexByName(icebreaker.name);
 
@@ -188,8 +192,11 @@ Voyage PathManager::getCurrentVoyage(IcebreakerId icebreaker_id) {
 }
 
 std::pair<VertID, float> PathManager::GetNextVertexInShortestPath(VertID current, const Icebreaker& icebreaker, VertID end) const {
-    float optimal_neighbour, optimal_metric = std::numeric_limits<float>::infinity();
+    int optimal_neighbour;
+    float optimal_metric = std::numeric_limits<float>::infinity();
     bool found = false;
+
+    std::cout << "search for path from " << current << " to " << end << std::endl;
 
     size_t icebreaker_graph_index = GetIcebreakerIndexByName(icebreaker.name);
 
@@ -218,17 +225,26 @@ std::pair<VertID, float> PathManager::GetNextVertexInShortestPath(VertID current
                 auto& graph = date_to_graph.at(okay_date).at(ship_class_to_index.at((*ships)[min_ship_id].ice_class));
                 auto& distances = date_to_distances.at(okay_date).at(ship_class_to_index.at((*ships)[min_ship_id].ice_class));
 
-                std::cout << "min_caravan_peed: " << minimal_caravan_speed << " and its ship.id: " << min_ship_id << std::endl;
+                std::cout << "min_caravan_peed: " << minimal_caravan_speed << " and its ship.id: " << min_ship_id
+                          << ", from: " << current << ", to: " << target << ", end: " << end
+                          << ", edge_weight: " << GetEdgeWeight(graph, current, target)
+                          << ", distance: " << distances[target][end]
+                          << ", okay_date: " << okay_date
+                          << ", index_map: " << ship_class_to_index.at((*ships)[min_ship_id].ice_class)
+                          << std::endl;
 
                 // все дебафы уже учтены в графе, просто нужно отдельно учитывать, что корабль в некоторых случаях не может идти по ребру сам
                 metric = GetEdgeWeight(graph, current, target) / minimal_caravan_speed + distances[target][end] / minimal_caravan_speed;
             }
         }
 
-        if (!found || metric < optimal_metric) {
+        if (metric < optimal_metric) {
             optimal_neighbour = target;
             optimal_metric = metric;
             found = true;
+
+            std::cout << "new optimal: " << metric << " to " << optimal_neighbour << " from " << current
+                      << ", taken edge: " << boost::source(neighbour, icebreaker_graph) << std::endl;
         }
     }
 

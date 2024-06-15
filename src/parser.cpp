@@ -187,13 +187,17 @@ DatesToIceGraph ParseGraphFromJson(
 
             auto ship_debuffs = GetShipIceDebuff(property.ice_type);
             auto icebreakers_speeds = GetIcebreakerSpeed(property.ice_type, *icebreakers);
-            
+
             size_t graph_type_index = 0;
             for (float debuff : ship_debuffs) {
                 if (debuff == 0.0f) {
                     property.weight = std::numeric_limits<float>::infinity();
                 } else {
                     property.weight = property.len / debuff;
+                }
+
+                if (property.start_id == 202 && property.end_id == 25) {
+                    std::cout << "debuff: " << debuff << ", weight: " << property.weight << ", len: " << property.len << std::endl;
                 }
 
                 boost::add_edge(property.start_id, property.end_id, property, date_to_graph[date][graph_type_index++]);
@@ -203,6 +207,10 @@ DatesToIceGraph ParseGraphFromJson(
                     property.weight = std::numeric_limits<float>::infinity();
                 } else {
                     property.weight = property.len / icebreaker_speed;
+                }
+
+                if (property.start_id == 202 && property.end_id == 25) {
+                    std::cout << "icebreaker_speed: " << icebreaker_speed << ", weight: " << property.weight << ", len: " << property.len << std::endl;
                 }
 
                 boost::add_edge(property.start_id, property.end_id, property, date_to_graph[date][graph_type_index++]);
