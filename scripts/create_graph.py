@@ -7,13 +7,13 @@ import math
 import json
 from collections import defaultdict
 
-excel_reader = pd.ExcelFile(r'dataset/ГрафДанные.xlsx', engine='openpyxl')
+excel_reader = pd.ExcelFile(r'../dataset/ГрафДанные.xlsx', engine='openpyxl')
 df_ports = excel_reader.parse('points')
 df_ports.drop(df_ports.columns[[4,5,6]], axis=1, inplace=True)
 df_edges = excel_reader.parse('edges')
 df_edges.drop(df_edges.columns[[4,5,6,7]], axis=1, inplace=True)
 
-excel_reader = pd.ExcelFile(r'dataset/IntegrVelocity.xlsx', engine='openpyxl')
+excel_reader = pd.ExcelFile(r'../dataset/IntegrVelocity.xlsx', engine='openpyxl')
 
 df_lon = excel_reader.parse('lon')
 df_lat = excel_reader.parse('lat')
@@ -239,7 +239,7 @@ with open("edges.json", "w") as f:
 with open("vertices.json", "w") as f:
     json.dump(all_vertices, f, ensure_ascii=False, indent=2)
 
-shp = geopandas.read_file("dataset/goas/goas_v01.shp").set_crs("EPSG:4326")
+shp = geopandas.read_file("../dataset/goas/goas_v01.shp").set_crs("EPSG:4326")
 shp_right = shp.clip_by_rect(20, 55, 180, 85)
 shp_left = shp.clip_by_rect(-180, 55, -160, 85)
 shp_left_trans = shp_left.translate(360, 0, 0)
@@ -253,13 +253,20 @@ for week in excel_reader.sheet_names[2:]:
     t.set_axis_off()
     plt.tight_layout()
     plt.margins(x=0,y=0)
-    for port in all_vertices:
-        plt.scatter(port["lon"], port["lat"], s=3, marker='.', color='orange' if port["name"] == "" else 'purple')
-        plt.annotate(port["name"], (port["lon"], port["lat"]), fontsize=2)
-    
+
+    edge_id = 0
     for edge in new_edges:
         color= 'green' if edge["type"][week] == 0 else ('blue' if edge["type"][week] == 1 else ("yellow" if edge["type"][week] == 2 else "red"))
         plt.plot([all_vertices[edge["start"]]["lon"], all_vertices[edge["end"]]["lon"]], [all_vertices[edge["start"]]["lat"], all_vertices[edge["end"]]["lat"]], color=color, linewidth=0.3)
+        plt.annotate(edge_id, ((all_vertices[edge["start"]]["lon"] + all_vertices[edge["end"]]["lon"]) / 2, (all_vertices[edge["start"]]["lat"] + all_vertices[edge["end"]]["lat"]) / 2), fontsize=1)
+        edge_id+=1
+    
 
-    plt.savefig('dataset/main_' + str(idx) + '.png', bbox_inches='tight', dpi=1000, pad_inches=0.0)
+    for port in all_vertices:
+        plt.scatter(port["lon"], port["lat"], s=1, marker='.', color='orange' if port["name"] == "" else 'purple', zorder=100)
+        plt.annotate(port["name"], (port["lon"], port["lat"]), fontsize=1)
+    
+    
+
+    plt.savefig('../dataset/main_' + str(idx) + '.png', bbox_inches='tight', dpi=1500, pad_inches=0.0)
     idx+=1
