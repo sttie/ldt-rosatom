@@ -12,6 +12,8 @@
 #include <nlohmann/json.hpp>
 #include <fstream>
 
+#include <limits>
+
 namespace parser {
 
 namespace {
@@ -44,6 +46,34 @@ VertID getVertID(const std::string& point_name, const GraphPointsInfo& graph_poi
     }
 
     return it->point_id.id;
+}
+
+std::array<float, 3> GetShipIceDebuff(int ice_type) {
+    if (ice_type == 0) {
+        return {1.0f, 1.0f, 1.0f};
+    } else if (ice_type == 1) {
+        return {0.0f, 0.0f, 0.6f};
+    } else if (ice_type == 2) {
+        return {0.0f, 0.0f, 0.0f};
+    } else if (ice_type == 3) {
+        return {0.0f, 0.0f, 0.0f};
+    }
+
+    throw std::runtime_error("invalid ice_type: " + std::to_string(ice_type));
+}
+
+std::array<float, 4> GetIcebreakerSpeed(int ice_type, const std::vector<Icebreaker>& icebreakers) {
+    if (ice_type == 0) {
+        return {icebreakers[0].speed, icebreakers[1].speed, icebreakers[2].speed, icebreakers[3].speed};
+    } else if (ice_type == 1) {
+        return {19.0f * 1852.0f * 24.0f, 19.0f * 1852.0f * 24.0f, 19.0f * 0.9f * 1852.0f * 24.0f, 19.0f * 0.9f * 1852.0f * 24.0f};
+    } else if (ice_type == 2) {
+        return {14.0f * 1852.0f * 24.0f, 14.0f * 1852.0f * 24.0f, 14.0f * 0.75f * 1852.0f * 24.0f, 14.0f * 0.75f * 1852.0f * 24.0f};
+    } else if (ice_type == 3) {
+        return {0.0f * 1852.0f * 24.0f, 0.0f * 1852.0f * 24.0f, 0.0f * 1852.0f * 24.0f, 0.f * 1852.0f * 24.0f};
+    }
+
+    throw std::runtime_error("invalid ice_type: " + std::to_string(ice_type));
 }
 
 }
@@ -92,9 +122,10 @@ GraphPointsInfo ParseGraphPointsFromExcel(const std::string& graph_filepath) {
     return points_info;
 }
 
-std::unordered_map<std::string, Graph> ParseGraphFromJson(
+DatesToIceGraph ParseGraphFromJson(
         const std::string& vertices_filepath,
-        const std::string& edges_filepath) {
+        const std::string& edges_filepath,
+        IcebreakersPtr icebreakers) {
     using json = nlohmann::json;
     static const std::array<std::string, 14> ice_dates = {
         "03-Mar-2020",
@@ -125,7 +156,7 @@ std::unordered_map<std::string, Graph> ParseGraphFromJson(
         throw std::runtime_error(edges_filepath + " is invalid");
     }
 
-    std::unordered_map<std::string, Graph> date_to_graph;
+    DatesToIceGraph date_to_graph;
     Graph graph;
 
     for (const auto& vertex_json : vertices_data) {
@@ -138,7 +169,11 @@ std::unordered_map<std::string, Graph> ParseGraphFromJson(
     }
 
     for (const auto& date : ice_dates) {
-        date_to_graph[date] = graph;
+        date_to_graph[date] = {};
+    
+        for (auto& ice_graph : date_to_graph[date]) {
+            ice_graph = graph;
+        }
     }
 
     for (const auto& edge_json : edges_data) {
@@ -149,7 +184,29 @@ std::unordered_map<std::string, Graph> ParseGraphFromJson(
 
         for (const auto& [date, type_val_json] : edge_json.at("type").items()) {
             property.ice_type = type_val_json.get<int>();
-            boost::add_edge(property.start_id, property.end_id, property, date_to_graph[date]);
+
+            auto ship_debuffs = GetShipIceDebuff(property.ice_type);
+            auto icebreakers_speeds = GetIcebreakerSpeed(property.ice_type, *icebreakers);
+            
+            size_t graph_type_index = 0;
+            for (float debuff : ship_debuffs) {
+                if (debuff == 0.0f) {
+                    property.weight = std::numeric_limits<float>::infinity();
+                } else {
+                    property.weight = property.len / debuff;
+                }
+
+                boost::add_edge(property.start_id, property.end_id, property, date_to_graph[date][graph_type_index++]);
+            }
+            for (float icebreaker_speed : icebreakers_speeds) {
+                if (icebreaker_speed == 0.0f) {
+                    property.weight = std::numeric_limits<float>::infinity();
+                } else {
+                    property.weight = property.len / icebreaker_speed;
+                }
+
+                boost::add_edge(property.start_id, property.end_id, property, date_to_graph[date][graph_type_index++]);
+            }
         }
     }
 
@@ -243,14 +300,12 @@ ShipsPtr ParseShipsSchedule(const std::string& dataset_path, const GraphPointsIn
         }
 
         // узлы -> м/ч
-        ship.speed = knot_speed * 1852;
+        ship.speed = knot_speed * 1852.0f * 24.0f; // скорость в метрах/день
 
         ship.cur_pos = getVertID(wks.cell("D" + std::to_string(row)).value().getString(), graph_points_info);
         ship.finish = getVertID(wks.cell("E" + std::to_string(row)).value().getString(), graph_points_info);
         ship.voyage_start_date = wks.cell("F" + std::to_string(row)).value().get<int>();
         ship.id = ShipId{index++};
-
-        std::cout << ship.name << " " << ship.voyage_start_date << std::endl;
         
         ships->push_back(std::move(ship));
     }
@@ -287,7 +342,7 @@ IcebreakersPtr ParseIcebreakers(const std::string& dataset_path, const GraphPoin
             throw std::runtime_error("wtf is the type of knot_speed column (icebreaker)?..");
         }
 
-        icebreaker.speed = knot_speed * 1852;
+        icebreaker.speed = knot_speed * 1852.0f * 24.0f;
 
         icebreaker.ice_class = FromStringToIceClass(wks.cell("E" + std::to_string(row)).value().getString());
         icebreaker.cur_pos = getVertID(wks.cell("F" + std::to_string(row)).value().getString(), graph_points_info);

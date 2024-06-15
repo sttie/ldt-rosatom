@@ -62,14 +62,14 @@ int main() {
 
     std::cout << "ships has been read!" << std::endl;
 
-    auto graph = parser::ParseGraphFromJson("../dataset/vertices.json", "../dataset/edges.json");
+    auto graph = parser::ParseGraphFromJson("../dataset/vertices.json", "../dataset/edges.json", icebreakers);
 
     /** Дополнительная подготовка данных **/
 
     // /** Алгоритм **/
-    PathManager pm(graph, icebreakers, ships);
-    Schedule res = algos::greedy(pm);
+    PathManager pm(std::move(graph), icebreakers, ships);
 
+    Schedule res = algos::greedy(pm);
     json res_json;
     res_json["icebreakers"] = json::array();
     for (int i = 0; i < (*icebreakers).size(); i++) {
