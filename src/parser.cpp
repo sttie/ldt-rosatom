@@ -52,9 +52,9 @@ std::array<float, 3> GetShipIceDebuff(int ice_type) {
     if (ice_type == 0) {
         return {1.0f, 1.0f, 1.0f};
     } else if (ice_type == 1) {
-        return {0.0f, 0.0f, 0.6f};
+        return {0.5f, 0.8f, 0.6f};
     } else if (ice_type == 2) {
-        return {0.0f, 0.0f, 0.0f};
+        return {0.0f, 0.7f, 0.15f};
     } else if (ice_type == 3) {
         return {0.0f, 0.0f, 0.0f};
     }
@@ -306,7 +306,7 @@ ShipsPtr ParseShipsSchedule(const std::string& dataset_path, const GraphPointsIn
         ship.finish = getVertID(wks.cell("E" + std::to_string(row)).value().getString(), graph_points_info);
         ship.voyage_start_date = wks.cell("F" + std::to_string(row)).value().get<int>();
         ship.id = ShipId{index++};
-        
+
         ships->push_back(std::move(ship));
     }
 
