@@ -78,7 +78,6 @@ std::array<float, 4> GetIcebreakerSpeed(int ice_type, const std::vector<Icebreak
 
 }
 
-
 GraphPointsInfo ParseGraphPointsFromExcel(const std::string& graph_filepath) {
     OpenXLSX::XLDocument doc{graph_filepath};
     if (!doc.isOpen()) {
