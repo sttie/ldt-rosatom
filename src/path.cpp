@@ -31,6 +31,28 @@ DistanceMatrix DistanceMatrixByGraph(Graph& graph) {
     return distances;
 }
 
+DistanceMatrix LenDistanceMatrixByGraph(Graph& graph) {
+    // std::cout << "start DistanceMatrixByGraph..." << std::endl;
+
+    // using WeightMap = boost::property_map<Graph, boost::edge_weight_t>::type;
+    using DistanceMatrixMap = DistanceProperty::matrix_map_type;
+
+    auto weight_pmap = boost::get(&EdgeProperty::len, graph);
+
+    // set the distance matrix to receive the floyd warshall output
+    DistanceMatrix distances(boost::num_vertices(graph));
+    DistanceMatrixMap dm(distances, graph);
+
+    // find all pairs shortest paths
+    bool valid = floyd_warshall_all_pairs_shortest_paths(graph, dm, boost::weight_map(weight_pmap));
+
+    if (!valid) {
+        throw std::runtime_error("floyd-warshall algorithm has returned valid = false!");
+    }
+
+    return distances;
+}
+
 Days GetWeekDay(Days time) {
     int day = static_cast<int>(time);
     float frac = time - static_cast<Days>(day);
@@ -54,7 +76,8 @@ void FloydWarshallThread(
         DistanceMatrixByGraph(ice_graphs_[6]),
         DistanceMatrixByGraph(ice_graphs_[7]),
         DistanceMatrixByGraph(ice_graphs_[8]),
-        DistanceMatrixByGraph(ice_graphs_[9])
+        DistanceMatrixByGraph(ice_graphs_[9]),
+        LenDistanceMatrixByGraph(ice_graphs_[10])
     };
 
     date_to_distances_mutex.lock();
@@ -65,16 +88,19 @@ void FloydWarshallThread(
 }
 
 // возвращает пустой вектор, если пути В ОДИНОЧКУ не существует
-std::vector<Voyage> PathManager::GetShortestPathAlone(const Ship& ship, VertID start, VertID end) const {
+std::vector<Voyage> PathManager::GetShortestPathAlone(const Ship& ship, VertID start, VertID end) {
     std::vector<Voyage> path;
 
-    size_t ship_index = ship_class_to_index.at(ship.ice_class);
+    size_t ship_index = alone_ship_class_to_index.at(ship.ice_class);
 
     VertID current_vert = start;
     Days fake_time = cur_time;
 
     while (current_vert != end) {
+        auto old_cur_time = cur_time;
+        cur_time = fake_time;
         auto [next_vert, edge_ice_type] = GetNextVertexInShortestPathAlone(current_vert, ship, end);
+        cur_time = old_cur_time;
 
         if (next_vert == -1) {
             return {};
@@ -101,24 +127,13 @@ std::vector<Voyage> PathManager::GetShortestPathAlone(const Ship& ship, VertID s
 }
 
 // ВРЕМЯ ВЫДАЕТСЯ ТАК, КАК БУДТО ВСЕ ВРЕМЯ В ПУТИ КОРАБЛЬ ship БЫЛ КОРАБЛЕМ  С МИНИМАЛЬНОЙ СКОРОСТЬЮ
-float PathManager::TimeToArriveUnderFakeProvodka(const Ship& ship, VertID start, VertID end) const {
+float PathManager::TimeToArriveUnderFakeProvodka(const Ship& ship, VertID start, VertID end) {
     size_t ship_index = ship_class_to_index.at(ship.ice_class);
-
-    auto okay_date = GetCurrentOkayDateByTime(cur_time);
-    const auto& distance = date_to_distances.at(okay_date).at(ship_index);
-    return distance[start][end] / ship.speed;
-}
-
-// время в пути корабля в одиночку
-float PathManager::TimeToArriveAlone(const Ship& ship, VertID start, VertID end) const {
-    size_t ship_index = ship_class_to_index.at(ship.ice_class);
-
-    auto okay_date = GetCurrentOkayDateByTime(cur_time);
-    const auto& graph = date_to_graph.at(okay_date).at(ship_index);
 
     VertID current_vert = start;
     float time = 0;
 
+    auto old_cur_time = cur_time;
     while (current_vert != end) {
         auto [next_vert, edge_ice_type] = GetNextVertexInShortestPathAlone(current_vert, ship, end);
 
@@ -126,9 +141,45 @@ float PathManager::TimeToArriveAlone(const Ship& ship, VertID start, VertID end)
             return std::numeric_limits<float>::infinity();
         }
 
-        time += (GetEdgeWeight(graph, current_vert, next_vert) / ship.speed);
+        auto okay_date = GetCurrentOkayDateByTime(cur_time);
+        const auto& graph = date_to_graph.at(okay_date).at(ship_index);
+        auto inc_time = (GetEdgeWeight(graph, current_vert, next_vert) / ship.speed);
+
+        cur_time += inc_time;
+        time += inc_time;
         current_vert = next_vert;
     }
+
+    cur_time = old_cur_time;
+
+    return time;
+}
+
+// время в пути корабля в одиночку
+float PathManager::TimeToArriveAlone(const Ship& ship, VertID start, VertID end) {
+    size_t ship_index = alone_ship_class_to_index.at(ship.ice_class);
+
+    VertID current_vert = start;
+    float time = 0;
+
+    auto old_cur_time = cur_time;
+    while (current_vert != end) {
+        auto [next_vert, edge_ice_type] = GetNextVertexInShortestPathAlone(current_vert, ship, end);
+
+        if (next_vert == -1) {
+            return std::numeric_limits<float>::infinity();
+        }
+
+        auto okay_date = GetCurrentOkayDateByTime(cur_time);
+        const auto& graph = date_to_graph.at(okay_date).at(ship_index);
+        auto inc_time = (GetEdgeWeight(graph, current_vert, next_vert) / ship.speed);
+
+        cur_time += inc_time;
+        time += inc_time;
+        current_vert = next_vert;
+    }
+
+    cur_time = old_cur_time;
 
     return time;
 }
@@ -374,7 +425,7 @@ std::pair<VertID, float> PathManager::GetNearestVertex(VertID source, const Ship
     }
 
     auto okay_date = GetCurrentOkayDateByTime(cur_time);
-    auto& distances = date_to_distances.at(okay_date)[ship_class_to_index.at(ship.ice_class)];
+    auto& distances = date_to_distances.at(okay_date)[GRAPH_CLASSES_AMOUNT - 1];
 
     VertID nearest = vertexes.front();
     for (size_t i = 1; i < vertexes.size(); ++i) {

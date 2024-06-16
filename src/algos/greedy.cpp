@@ -14,7 +14,7 @@ float weightShipAlone(const Ship &ship, const Days &cur_time, float max_speed, d
     return w1 * speed_coef + w2 * waiting_coef;
 }
 
-float weightShipForIcebreaker(const Icebreaker &icebreaker, const Ship &ship, const PathManager &pm, const Caravan &caravan) {
+float weightShipForIcebreaker(const Icebreaker &icebreaker, const Ship &ship, PathManager &pm, const Caravan &caravan) {
     float w3 = 0.9;
 
     // calculate how much this little maneuver is gonna cost us

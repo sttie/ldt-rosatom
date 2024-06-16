@@ -68,7 +68,7 @@ const std::unordered_map<IceClass, size_t> alone_ship_class_to_index = {
     {IceClass::kArc7, 9},
 };
 
-constexpr size_t GRAPH_CLASSES_AMOUNT = 10;
+constexpr size_t GRAPH_CLASSES_AMOUNT = 11;
 
 using DatesToIceGraph = std::unordered_map<std::string, std::array<Graph, GRAPH_CLASSES_AMOUNT>>;
 using DatesToDistances = std::unordered_map<std::string, std::array<DistanceMatrix, GRAPH_CLASSES_AMOUNT>>;
@@ -122,10 +122,10 @@ public:
     std::pair<VertID, float> GetNearestVertex(VertID source, const Ship& ship, const std::vector<VertID>& vertexes) const;
     float PathDistance(VertID start, const Icebreaker& icebreaker, std::vector<VertID> points) const;
 
-    float TimeToArriveUnderFakeProvodka(const Ship& ship, VertID start, VertID end) const;
-    float TimeToArriveAlone(const Ship& ship, VertID start, VertID end) const;
+    float TimeToArriveUnderFakeProvodka(const Ship& ship, VertID start, VertID end);
+    float TimeToArriveAlone(const Ship& ship, VertID start, VertID end);
 
-    std::vector<Voyage> GetShortestPathAlone(const Ship& ship, VertID start, VertID end) const;
+    std::vector<Voyage> GetShortestPathAlone(const Ship& ship, VertID start, VertID end);
 
 private:
     std::pair<VertID, float> GetNextVertexInShortestPath(VertID current, const Icebreaker& icebreaker, const Caravan& caravan, VertID end) const;

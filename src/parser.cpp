@@ -229,6 +229,8 @@ DatesToIceGraph ParseGraphFromJson(
 
                 boost::add_edge(property.start_id, property.end_id, property, date_to_graph[date][graph_type_index++]);
             }
+
+            boost::add_edge(property.start_id, property.end_id, property, date_to_graph[date][graph_type_index++]);
         }
     }
 
