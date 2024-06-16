@@ -137,10 +137,6 @@ $(function() {
   var lat_start = 20;
   var long_start = 55;
 
-function drawPoint(x, y){
-  ctx.fillRect((x - lat_start) * cell_width - cell_width / 2, (canvas.height) - (y - long_start) * cell_height - cell_width / 2, cell_width , cell_width)
-}
-
   if (canvas.getContext) {
     ctx = canvas.getContext('2d');
     var img1 = new Image();
@@ -168,6 +164,30 @@ function drawPoint(x, y){
     return false;
   }
 
+  var colorDict = {"0" : "cc-green", 
+                   "1" : "cc-blue", 
+                   "2" : "cc-light-purple",
+                   "3" : "cc-light-green",
+                   "4" : "cc-purple",
+                   "5" : "cc-grey",
+                   "6" : "cc-light-green",
+                   "7" : "cc-orange",
+                   "8" : "cc-light-blue",
+                   "9" : "cc-red",
+                   "10" : "cc-light-orange"};
+
+    var colorDictCanvas = {"0" : "#005301", 
+                   "1" : "#00bfff", 
+                   "2" : "#ac67cf",
+                   "3" : "#33a26b",
+                   "4" : "#800d88",
+                   "5" : "#474048",
+                   "6" : "#3cae8c",
+                   "7" : "#d4a004",
+                   "8" : "#2c83c9",
+                   "9" : "#a8000e",
+                   "10" : "#ab7632"};
+
   var fr = new FileReader();
 
   fr.onload = function(e) { 
@@ -177,19 +197,31 @@ function drawPoint(x, y){
     //var formatted = JSON.stringify(result, null, 2);
     
     const ticks = new Set();
+    var ships = new Set();
 
+
+    // icebreakers
     for(let i = 0; i < result["icebreakers"].length; i++){
-      let icebreaker_name = result["icebreakers"][i]["id"].toString();
       for(let j = 0; j < result["icebreakers"][i]["path"].length; j++){
 
         tasks.push({row_id : result["icebreakers"][i]["id"], 
                     start: result["icebreakers"][i]["path"][j]["start_time"],
                     end: result["icebreakers"][i]["path"][j]["end_time"],
                     progress: 0,
-                    name : '',
-                    custom_class: 'cc-blue',
+                    custom_class: colorDict[(result["icebreakers"][i]["id"] % 10).toString()],
                     name: "{" + result["icebreakers"][i]["path"][j]["caravan"].toString() + "}"
                   })
+
+        for (let k = 0; k < result["icebreakers"][i]["path"][j]["caravan"].length; k++){
+          tasks.push({row_id : result["icebreakers"][i]["path"][j]["caravan"][k] + result["icebreakers"].length,
+          start : result["icebreakers"][i]["path"][j]["start_time"],
+          end: result["icebreakers"][i]["path"][j]["end_time"],
+          progress: 0,
+          custom_class: colorDict[(result["icebreakers"][i]["id"] % 10).toString()],
+          name : ""
+        });
+        ships.add(result["icebreakers"][i]["path"][j]["caravan"][k]);
+        }
 
         ticks.add(new Date(result["icebreakers"][i]["path"][j]["start_time"]).getTime() / 1000);
         ticks.add(new Date(result["icebreakers"][i]["path"][j]["end_time"]).getTime() / 1000);
@@ -207,6 +239,34 @@ function drawPoint(x, y){
       }
     }
 
+    //ships
+    for(let i = 0; i < result["ships"].length; i++){
+      for(let j = 0; j < result["ships"][i]["path"].length; j++){
+        tasks.push({row_id : result["ships"][i]["id"] + result["icebreakers"].length, 
+                    start: result["ships"][i]["path"][j]["start_time"],
+                    end: result["ships"][i]["path"][j]["end_time"],
+                    progress: 0,
+                    custom_class: "cc-ships",
+                    name: ""
+                  });
+        ticks.add(new Date(result["ships"][i]["path"][j]["start_time"]).getTime() / 1000);
+        ticks.add(new Date(result["ships"][i]["path"][j]["end_time"]).getTime() / 1000);
+  
+        for(let k = 0; k < edges.length; k++){
+          if((edges[k]["start"] == result["ships"][i]["path"][j]["start"] && 
+          edges[k]["end"] == result["ships"][i]["path"][j]["end"]) ||
+          (edges[k]["end"] == result["ships"][i]["path"][j]["start"] && 
+          edges[k]["start"] == result["ships"][i]["path"][j]["end"])) {
+            result["ships"][i]["path"][j]["len"] = edges[k]["len"];
+            break;
+          }
+        }
+      }
+      ships.add(result["ships"][i]["id"]);
+      
+    }
+
+    // create column of names
     var gg = document.getElementById('t');
     const tbl = document.createElement('table');
     for (let i = 0; i < result["icebreakers"].length; i++){
@@ -214,9 +274,15 @@ function drawPoint(x, y){
       const td = tr.insertCell();
       td.appendChild(document.createTextNode("icb" + result["icebreakers"][i]["id"]));
     }
+
+    for(let i = 0; i <= Math.max.apply(Math, Array.from(ships)); i++){
+      const tr = tbl.insertRow();
+      const td = tr.insertCell();
+      td.appendChild(document.createTextNode("ship" + (i).toString())); 
+    }
+    
     gg.appendChild(tbl);
 
-    console.log(tasks);
 
     var gantt = new Gantt("#gantt", tasks, {
       view_mode : "Quarter Day",
@@ -228,6 +294,9 @@ function drawPoint(x, y){
 
     var node = document.getElementById('dateText');
     node.textContent = new Date(ticks_arr[0] * 1000).toISOString();
+
+    var gann = document.getElementsByClassName("gantt-container")[0];
+    gann.style.height = (gg.offsetHeight + 74 + 100).toString() + "px";
 
     $("#slider").slider({
       value: ticks_arr[0],
@@ -245,10 +314,8 @@ function drawPoint(x, y){
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       gantt.set_scroll_position(new Date(slideEvt.value * 1000));
-
+      ctx.font = "12px serif";
       for(let i = 0; i < result["icebreakers"].length; i++){
-
-        
 
         if(slideEvt.value < result["icebreakers"][i]["path"][0]["start_time"] || slideEvt.value > result["icebreakers"][i]["path"][result["icebreakers"][i]["path"].length - 1]["end_time"]){
           continue;
@@ -256,7 +323,7 @@ function drawPoint(x, y){
 
         for(let j = 0; j < result["icebreakers"][i]["path"].length; j++) {
           let start_time = new Date(result["icebreakers"][i]["path"][j]["start_time"]).getTime() / 1000;
-          let end_time = new Date(result["icebreakers"][i]["path"][j]["end_time"]).getTime() / 1000
+          let end_time = new Date(result["icebreakers"][i]["path"][j]["end_time"]).getTime() / 1000;
           if(start_time <= slideEvt.value && end_time >= slideEvt.value){
             const time_taken = end_time - start_time;
             const path_length = result["icebreakers"][i]["path"][j]["len"];
@@ -271,10 +338,44 @@ function drawPoint(x, y){
                       (ports[result["icebreakers"][i]["path"][j]["end"]]["lon"] - 
                       ports[result["icebreakers"][i]["path"][j]["start"]]["lon"]) * vel * (slideEvt.value - start_time) / path_length;
 
-            drawPoint(x,y);
+            ctx.fillStyle = colorDictCanvas[(result["icebreakers"][i]["id"] % 10).toString()];
+            ctx.fillRect((x - lat_start) * cell_width - cell_width / 2, (canvas.height) - (y - long_start) * cell_height - cell_width / 2, cell_width , cell_width);
+            ctx.fillStyle = "black";
+            ctx.fillText("{" + result["icebreakers"][i]["path"][j]["caravan"].toString() + "}", (x - lat_start) * cell_width - cell_width / 2, (canvas.height) - (y - long_start) * cell_height - cell_width / 2 - cell_height / 3);
             break;
+
           }
         }
+      }
+
+      for(let i = 0; i < result["ships"].length; i++){
+        if(slideEvt.value < result["ships"][i]["path"][0]["start_time"] || slideEvt.value > result["ships"][i]["path"][result["ships"][i]["path"].length - 1]["end_time"]){
+          continue;
+        }
+
+        for(let j = 0; j < result["ships"][i]["path"].length; j++) {
+          let start_time = new Date(result["ships"][i]["path"][j]["start_time"]).getTime() / 1000;
+          let end_time = new Date(result["ships"][i]["path"][j]["end_time"]).getTime() / 1000;
+          if(start_time <= slideEvt.value && end_time >= slideEvt.value){
+            const time_taken = end_time - start_time;
+            const path_length = result["ships"][i]["path"][j]["len"];
+            const vel =  path_length / time_taken;
+            const y = ports[result["ships"][i]["path"][j]["start"]]["lat"] + 
+                      (ports[result["ships"][i]["path"][j]["end"]]["lat"] - 
+                      ports[result["ships"][i]["path"][j]["start"]]["lat"]) * vel * (slideEvt.value - start_time) / path_length;
+
+            const x = ports[result["ships"][i]["path"][j]["start"]]["lon"] + 
+                      (ports[result["ships"][i]["path"][j]["end"]]["lon"] - 
+                      ports[result["ships"][i]["path"][j]["start"]]["lon"]) * vel * (slideEvt.value - start_time) / path_length;
+            
+            ctx.fillStyle = "#21389e";
+            ctx.fillRect((x - lat_start) * cell_width - cell_width / 2, (canvas.height) - (y - long_start) * cell_height - cell_width / 2, cell_width , cell_width);
+            ctx.fillStyle = "white";
+            ctx.fillText(result["ships"][i]["id"].toString(), (x - lat_start) * cell_width - cell_width / 2, (canvas.height) - (y - long_start) * cell_height - cell_width / 2 + cell_height / 3);
+            break;     
+          }
+        }
+
       }
 
  
@@ -286,8 +387,6 @@ function drawPoint(x, y){
 
   fr.readAsText(files.item(0));
   };
-
-  
 
   
 });

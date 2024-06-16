@@ -15,9 +15,6 @@
     display:block;
  
 }
-.cc-blue g rect{
-    fill: #00bfff !important;
-}
 
 #gan{
     display:inline-block;
@@ -34,4 +31,59 @@
 #t td {
     padding-top: 14.8px;
     padding-bottom: 14.8px;
+}
+
+.cc-green g rect{
+    fill: #005301 !important;
+}
+
+.cc-blue g rect{
+    fill: #00bfff !important;
+}
+
+.cc-orange g rect{
+    fill: #d4a004 !important;
+}
+
+.cc-red g rect{
+    fill: #a8000e !important;
+}
+
+.cc-purple g rect{
+    fill: #800d88 !important;
+}
+
+.cc-grey g rect{
+    fill: #474048 !important;
+}
+
+.cc-light-green g rect{
+    fill: #33a26b !important;
+}
+
+.cc-light-purple g rect{
+    fill: #ac67cf !important;
+}
+
+.cc-light-blue g rect{
+    fill: #2c83c9 !important;
+}
+
+.cc-light-green g rect{
+    fill: #3cae8c !important;
+}
+
+.cc-light-orange g rect{
+    fill: #ab7632 !important;
+}
+
+.gantt-container{
+
+    overflow-x:scroll;
+    height: auto;
+    width: 1000px;
+}
+
+.cc-ships g rect{
+    fill: #21389e !important;
 }
