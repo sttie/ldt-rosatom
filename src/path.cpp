@@ -93,6 +93,8 @@ std::vector<Voyage> PathManager::GetShortestPathAlone(const Ship& ship, VertID s
         fake_time = current_voyage.end_time;
 
         path.push_back(current_voyage);
+
+        current_vert = next_vert;
     }
 
     return path;
