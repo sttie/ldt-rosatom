@@ -134,6 +134,6 @@ private:
     std::pair<float, int> GetMinimalSpeedInCaravan(const Caravan& caravan, int edge_ice_type) const;
     std::string GetCurrentOkayDateByTime(Days time) const;
 
-    VertID FindNewAchievablePoint(const Ship& ship, VertID from);
+    VertID FindNewAchievablePoint(const Ship& ship, VertID from, std::unordered_set<VertID>& visited);
     void FixFinishForWeakShips(const std::vector<int>& weak_ships, const Icebreaker& icebreaker);
 };

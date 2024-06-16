@@ -101,8 +101,5 @@ int main() {
     o << std::setw(4) << res_json << std::endl;
     schedule.close();
 
-    std::cout << "done!" << std::endl;
-    int _; std::cin >> _;
-
     return 0;
 }
