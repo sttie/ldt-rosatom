@@ -122,7 +122,7 @@ public:
     std::pair<VertID, float> GetNearestVertex(VertID source, const Ship& ship, const std::vector<VertID>& vertexes) const;
     float PathDistance(VertID start, const Icebreaker& icebreaker, std::vector<VertID> points) const;
 
-    float TimeToArriveUnderFakeProvodka(const Ship& ship, VertID start, VertID end);
+    float TimeToArriveUnderFakeProvodka(const Ship& ship, const Icebreaker &icebreaker, VertID start, VertID end);
     float TimeToArriveAlone(const Ship& ship, VertID start, VertID end);
 
     std::vector<Voyage> GetShortestPathAlone(const Ship& ship, VertID start, VertID end);

@@ -127,15 +127,19 @@ std::vector<Voyage> PathManager::GetShortestPathAlone(const Ship& ship, VertID s
 }
 
 // ВРЕМЯ ВЫДАЕТСЯ ТАК, КАК БУДТО ВСЕ ВРЕМЯ В ПУТИ КОРАБЛЬ ship БЫЛ КОРАБЛЕМ  С МИНИМАЛЬНОЙ СКОРОСТЬЮ
-float PathManager::TimeToArriveUnderFakeProvodka(const Ship& ship, VertID start, VertID end) {
+float PathManager::TimeToArriveUnderFakeProvodka(const Ship& ship, const Icebreaker &icebreaker, VertID start, VertID end) {
     size_t ship_index = ship_class_to_index.at(ship.ice_class);
 
     VertID current_vert = start;
     float time = 0;
 
     auto old_cur_time = cur_time;
+    Caravan fake_caravan;
+    fake_caravan.icebreaker_id = icebreaker.id;
+    fake_caravan.ships_id.insert(ship.id);
+
     while (current_vert != end) {
-        auto [next_vert, edge_ice_type] = GetNextVertexInShortestPathAlone(current_vert, ship, end);
+        auto [next_vert, _] = GetNextVertexInShortestPath(current_vert, icebreaker, fake_caravan, end);
 
         if (next_vert == -1) {
             return std::numeric_limits<float>::infinity();
@@ -344,9 +348,7 @@ std::pair<VertID, float> PathManager::GetNextVertexInShortestPath(VertID current
     }
 
     if (!found) {
-        throw std::runtime_error("lol no optimal path from " + std::to_string(current) + " to "
-                                    + std::to_string(end) + " for icebreaker " + std::to_string(icebreaker.id.id) + " caravan size "
-                                    + std::to_string(caravan.ships_id.size()));
+       return std::make_pair(-1, -1);
     }
 
     return std::make_pair(optimal_neighbour, optimal_metric);
