@@ -3,7 +3,7 @@ $(function() {
   const canvas = document.getElementById("myCanvas");
 
   var ctx;
-  const edges = [{"start" : 44, "end":	15, "len":	270.0166416},
+  const edgesold = [{"start" : 44, "end":	15, "len":	270.0166416},
   {"start" : 10, "end":	11, "len":	277.1898363},
   {"start" : 18, "end":	39, "len":	58.39035132},
   {"start" : 13, "end":	16, "len":	238.8589885},
@@ -78,7 +78,7 @@ $(function() {
   {"start" : 17, "end":	28, "len":	285.0795135}];
 
 
-  var edgesnew = [
+  var edges = [
     {
       "start": 44,
       "end": 47,
