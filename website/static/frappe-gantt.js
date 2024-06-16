@@ -2007,10 +2007,12 @@ var Gantt = (function () {
         "hour",
       );
 
+      
+
       const scroll_pos =
         (hours_before_first_task / this.options.step) *
         this.options.column_width -
-        this.options.column_width;
+        3*this.options.column_width;
       parent_element.scrollTo({ left: scroll_pos, behavior: 'smooth' });
     }
 
