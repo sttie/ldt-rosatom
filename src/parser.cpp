@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <boost/algorithm/string.hpp>
 
-#include <nlohmann/json.hpp>
+#include <json.hpp>
 #include <fstream>
 
 #include <limits>

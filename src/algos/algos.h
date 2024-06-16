@@ -19,6 +19,6 @@ std::vector<std::pair<K, V>> sortMapLess(const std::map<K, V> &m) {
 
 namespace algos {
 
-Schedule greedy(PathManager &manager);
+Schedule greedy(PathManager &manager, double * sum_res);
 
 } //algos

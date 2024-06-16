@@ -121,7 +121,7 @@ bool checkShipForCaravan(const Ship &ship, Caravan &caravan, PathManager &pm) {
     return true;
 }
 
-Schedule algos::greedy(PathManager &manager) {
+Schedule algos::greedy(PathManager &manager, double *sum_res) {
     Ships &ships = *manager.ships;
     Icebreakers &icebreakers = *manager.icebreakers;
     std::unordered_map<ShipId, float> wait_time;
@@ -379,6 +379,7 @@ Schedule algos::greedy(PathManager &manager) {
         }
     }
     std::cout << "SUM: " << sum << "\n";
+    *sum_res = sum;
 
     return res;
 }

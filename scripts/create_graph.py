@@ -88,7 +88,7 @@ for index, edge in df_edges.iterrows():
         y = line_func(x, x1, y1, x2, y2)
 
     # generate vertices between ports
-    n_dots = 3
+    n_dots = int(edge["length"] / 100) * 2
     xxi = []
     for i in range(n_dots):
         xxi.append(int(len(x)/(n_dots + 1) * (i+1) - 1))
@@ -233,6 +233,12 @@ for week in excel_reader.sheet_names[2:]:
                         if edge["start"] == g.path[i] and edge["end"] == g.path[i+1] or edge["start"] == g.path[i+1] and edge["end"] == g.path[i]:
                             edge["type"][week] = g.type
 
+for edge in new_edges:
+    if edge["end"] == 25 or edge["start"] == 25:
+        for week in edge["type"]:
+            edge["type"][week] = 1
+
+
 with open("edges.json", "w") as f:
     json.dump(new_edges, f, ensure_ascii=False, indent=2)
     
@@ -253,6 +259,7 @@ for week in excel_reader.sheet_names[2:]:
     t.set_axis_off()
     plt.tight_layout()
     plt.margins(x=0,y=0)
+    print("plotting for week: ", week)
 
     edge_id = 0
     for edge in new_edges:
@@ -264,7 +271,7 @@ for week in excel_reader.sheet_names[2:]:
 
     for port in all_vertices:
         plt.scatter(port["lon"], port["lat"], s=1, marker='.', color='orange' if port["name"] == "" else 'purple', zorder=100)
-        plt.annotate("[" + str(port["id"]) + "]" +port["name"], (port["lon"], port["lat"]), fontsize=1, zorder=101)
+        plt.annotate(port["name"], (port["lon"], port["lat"]), fontsize=1, zorder=101)
     
     
 

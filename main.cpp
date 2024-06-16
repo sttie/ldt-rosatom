@@ -66,15 +66,31 @@ int main() {
 
     /** Дополнительная подготовка данных **/
 
-    // /** Алгоритм **/
-    PathManager pm(std::move(graph), icebreakers, ships);
 
-    Schedule res = algos::greedy(pm);
     json res_json;
     res_json["icebreakers"] = json::array();
     for (int i = 0; i < (*icebreakers).size(); i++) {
-        res_json["icebreakers"].push_back({{"id",i}, {"path", json::array()}});
+        res_json["icebreakers"].push_back({{"id",i}, {"name", (*icebreakers)[i].name}, {"path", json::array()}});
     }
+    for(int i = 0; i < (*ships).size(); i++) {
+        res_json["ships"].push_back({{"id", i}, {"name", (*ships)[i].name}, {"path", json::array()}});
+        res_json["ships"][i]["path"].push_back({
+                                                        {"caravan",""},
+                                                        {"start", (*ships)[i].cur_pos},
+                                                        {"start_time",(*ships)[i].voyage_start_date},
+                                                        {"end", (*ships)[i].cur_pos},
+                                                        {"end_time",(*ships)[i].voyage_start_date}
+                                                        });
+
+    }
+
+    // /** Алгоритм **/
+    PathManager pm(std::move(graph), icebreakers, ships);
+
+    double sum;
+
+    Schedule res = algos::greedy(pm, &sum);
+
 
     std::ofstream schedule("schedule.txt");
     schedule << "schedule size: " << res.size() << std::endl;
@@ -92,11 +108,30 @@ int main() {
                                                    {"start_time",sch_atom.edge_voyage.start_time},
                                                    {"end_time", sch_atom.edge_voyage.end_time}});
                 schedule << "[" << std::to_string(sch_atom.caravan.icebreaker_id->id) << "] ";
+        } else {
+            res_json["ships"][sch_atom.caravan.ships_id.begin()->id]["path"].push_back({
+                                                                    {"caravan", ""},
+                                                                    {"start", start},
+                                                                    {"end", end},
+                                                                    {"start_time", sch_atom.edge_voyage.start_time},
+                                                                    {"end_time", sch_atom.edge_voyage.end_time}
+            });
         }
         schedule << CaravanToString(sch_atom.caravan.ships_id) << ": " << start << " -> " << end;
         schedule << " (" << sch_atom.edge_voyage.start_time << ";" << sch_atom.edge_voyage.end_time << ")";
         schedule << "\n";
     }
+
+    std::ifstream ifs_vertices("../dataset/vertices.json");
+    json jf_vertices = json::parse(ifs_vertices);
+
+    std::ifstream ifs_edges("../dataset/edges.json");
+    json jf_edges = json::parse(ifs_edges);
+
+    res_json["edges"] = jf_edges;
+    res_json["vertices"] = jf_vertices;
+    res_json["sum"] = sum;
+
     std::ofstream o("schedule.json");
     o << std::setw(4) << res_json << std::endl;
     schedule.close();
