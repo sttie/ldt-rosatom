@@ -55,7 +55,20 @@ const std::unordered_map<IceClass, size_t> ship_class_to_index = {
     {IceClass::kArc7, 2},
 };
 
-constexpr size_t GRAPH_CLASSES_AMOUNT = 7;
+const std::unordered_map<IceClass, size_t> alone_ship_class_to_index = {
+    {IceClass::kNoIceClass, 7},
+    {IceClass::kArc1, 7},
+    {IceClass::kArc2, 7},
+    {IceClass::kArc3, 7},
+
+    {IceClass::kArc4, 8},
+    {IceClass::kArc5, 8},
+    {IceClass::kArc6, 8},
+
+    {IceClass::kArc7, 9},
+};
+
+constexpr size_t GRAPH_CLASSES_AMOUNT = 10;
 using DatesToIceGraph = std::unordered_map<std::string, std::array<Graph, GRAPH_CLASSES_AMOUNT>>;
 using DatesToDistances = std::unordered_map<std::string, std::array<DistanceMatrix, GRAPH_CLASSES_AMOUNT>>;
 
@@ -112,13 +125,12 @@ public:
     float TimeToArriveUnderFakeProvodka(const Ship& ship, VertID start, VertID end) const;
     float TimeToArriveAlone(const Ship& ship, VertID start, VertID end) const;
 
-    std::vector<VertID> GetShortestPathAlone(const Ship& ship, VertID start, VertID end) const;
+    std::vector<Voyage> GetShortestPathAlone(const Ship& ship, VertID start, VertID end) const;
 
 private:
+    std::pair<int, int> GetNextVertexInShortestPathAlone(VertID current, const Ship& ship, VertID end) const;
     std::pair<VertID, float> GetNextVertexInShortestPath(VertID current, const Icebreaker& icebreaker, VertID end) const;
-    std::pair<int, int> GetNextVertexInShortestPath(VertID current, const Ship& ship, VertID end) const;
 
     std::pair<float, int> GetMinimalSpeedInCaravan(const Caravan& caravan, int edge_ice_type) const;
     std::string GetCurrentOkayDateByTime(Days time) const;
 };
-

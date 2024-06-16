@@ -51,7 +51,10 @@ void FloydWarshallThread(
         DistanceMatrixByGraph(ice_graphs_[3]),
         DistanceMatrixByGraph(ice_graphs_[4]),
         DistanceMatrixByGraph(ice_graphs_[5]),
-        DistanceMatrixByGraph(ice_graphs_[6])
+        DistanceMatrixByGraph(ice_graphs_[6]),
+        DistanceMatrixByGraph(ice_graphs_[7]),
+        DistanceMatrixByGraph(ice_graphs_[8]),
+        DistanceMatrixByGraph(ice_graphs_[9])
     };
 
     date_to_distances_mutex.lock();
@@ -59,46 +62,37 @@ void FloydWarshallThread(
     date_to_distances_mutex.unlock();
 }
 
-float GetDebuffAlone(IceClass ice_class, int edge_ice_type) {
-    if (edge_ice_type == 0) {
-        return 1.0f;
-    }
-
-    int ice_class_int = static_cast<int>(ice_class);
-    if (ice_class_int >= int(IceClass::kNoIceClass) && ice_class_int <= int(IceClass::kArc3)) {
-        return 0.0f;
-    } else if (ice_class_int >= int(IceClass::kArc4) && ice_class_int <= int(IceClass::kArc6)) {
-        return 0.0f;
-    } else if (ice_class_int == int(IceClass::kArc7)) {
-        if (edge_ice_type == 1) {
-            return 1.0f;
-        } else {
-            return 0.0f;
-        }
-    }
-
-    throw std::runtime_error("invalid ice_class debuff under provodka: ice_class=" + std::to_string(ice_class_int) + ", edge_ice_type=" + std::to_string(edge_ice_type));
-}
-
 }
 
 // возвращает пустой вектор, если пути В ОДИНОЧКУ не существует
-std::vector<VertID> PathManager::GetShortestPathAlone(const Ship& ship, VertID start, VertID end) const {
-    std::vector<VertID> path;
+std::vector<Voyage> PathManager::GetShortestPathAlone(const Ship& ship, VertID start, VertID end) const {
+    std::vector<Voyage> path;
+
+    size_t ship_index = ship_class_to_index.at(ship.ice_class);
 
     VertID current_vert = start;
-    path.push_back(start);
+    Days fake_time = cur_time;
 
     while (current_vert != end) {
-        auto [next_vert, edge_ice_type] = GetNextVertexInShortestPath(current_vert, ship, end);
+        auto [next_vert, edge_ice_type] = GetNextVertexInShortestPathAlone(current_vert, ship, end);
 
-        auto debuff = GetDebuffAlone(ship.ice_class, edge_ice_type);
-        if (debuff == 0.0f) {
+        if (next_vert == -1) {
             return {};
-        } else {
-            path.push_back(next_vert);
-            current_vert = next_vert;
         }
+
+        Voyage current_voyage;
+        current_voyage.start_point = current_vert;
+        current_voyage.end_point = next_vert;
+        current_voyage.start_time = fake_time;
+        
+        auto okay_date = GetCurrentOkayDateByTime(cur_time);
+        const auto& graph = date_to_graph.at(okay_date).at(ship_index);
+        float time_to_next_vert = GetEdgeWeight(graph, current_vert, next_vert) / ship.speed;
+        current_voyage.end_time = fake_time + time_to_next_vert;
+
+        fake_time = time_to_next_vert;
+
+        path.push_back(current_voyage);
     }
 
     return path;
@@ -124,15 +118,14 @@ float PathManager::TimeToArriveAlone(const Ship& ship, VertID start, VertID end)
     float time = 0;
 
     while (current_vert != end) {
-        auto [next_vert, edge_ice_type] = GetNextVertexInShortestPath(current_vert, ship, end);
+        auto [next_vert, edge_ice_type] = GetNextVertexInShortestPathAlone(current_vert, ship, end);
 
-        auto debuff = GetDebuffAlone(ship.ice_class, edge_ice_type);
-        if (debuff == 0.0f) {
+        if (next_vert == -1) {
             return std::numeric_limits<float>::infinity();
-        } else {
-            time += (GetEdgeLen(graph, current_vert, next_vert) / (debuff * ship.speed));
-            current_vert = next_vert;
-        }
+        } 
+        
+        time += (GetEdgeWeight(graph, current_vert, next_vert) / ship.speed);
+        current_vert = next_vert;
     }
 
     return time;
@@ -159,7 +152,7 @@ PathManager::PathManager(DatesToIceGraph date_to_graph_, std::shared_ptr<Icebrea
 
 // build path to point, return next step
 Voyage PathManager::sail2point(const Icebreaker &icebreaker, VertID point) {
-    auto [next_vertex, metric_to_vertex] = GetNextVertexInShortestPath(icebreaker.cur_pos, icebreaker, point);
+    auto [next_vertex, _] = GetNextVertexInShortestPath(icebreaker.cur_pos, icebreaker, point);
 
     size_t icebreaker_graph_index = GetIcebreakerIndexByName(icebreaker.name);
 
@@ -281,22 +274,21 @@ std::pair<VertID, float> PathManager::GetNextVertexInShortestPath(VertID current
     return std::make_pair(optimal_neighbour, optimal_metric);
 }
 
-std::pair<int, int> PathManager::GetNextVertexInShortestPath(VertID current, const Ship& ship, VertID end) const {
+std::pair<int, int> PathManager::GetNextVertexInShortestPathAlone(VertID current, const Ship& ship, VertID end) const {
     int optimal_neighbour = -1;
     float optimal_metric = std::numeric_limits<float>::infinity();
     bool found = false;
 
-    size_t ship_graph_index = ship_class_to_index.at(ship.ice_class);
+    size_t alone_ship_graph_index = alone_ship_class_to_index.at(ship.ice_class);
 
     auto okay_date = GetCurrentOkayDateByTime(cur_time);
-    auto& graph = date_to_graph.at(okay_date).at(ship_graph_index);
-    auto& distances = date_to_distances.at(okay_date).at(ship_graph_index);
+    auto& graph = date_to_graph.at(okay_date).at(alone_ship_graph_index);
+    auto& distances = date_to_distances.at(okay_date).at(alone_ship_graph_index);
 
     for (auto neighbour : boost::make_iterator_range(boost::out_edges(current, graph))) {
         int target = boost::target(neighbour, graph);
 
         auto [edge, _] = boost::edge(current, target, graph);
-        // все дебафы уже учтены в графе, просто нужно отдельно учитывать, что корабль в некоторых случаях не может идти по ребру сам
         float metric = GetEdgeWeight(graph, current, target) / ship.speed + distances[target][end] / ship.speed;
 
         if (metric < optimal_metric) {
