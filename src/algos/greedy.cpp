@@ -25,8 +25,8 @@ float weightShipForIcebreaker(const Icebreaker &icebreaker, const Ship &ship, co
 
     if (!cur_route.empty()) {
         auto [nearest, _] = pm.GetNearestVertex(ship.cur_pos, ship, cur_route);
-        // if (std::isinf(pm.TimeToArriveAlone(ship, ship.cur_pos, nearest)))
-        //     return 0;
+        if (pm.TimeToArriveAlone(ship, ship.cur_pos, nearest) > 1000.0f)
+            return 0;
         double dist1 = pm.PathDistance(icebreaker.cur_pos, icebreaker, cur_route);
         double dist_to_pickup = pm.PathDistance(icebreaker.cur_pos, icebreaker, {ship.cur_pos});
         cur_route.push_back(ship.finish);

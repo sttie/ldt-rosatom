@@ -85,12 +85,12 @@ std::vector<Voyage> PathManager::GetShortestPathAlone(const Ship& ship, VertID s
         current_voyage.end_point = next_vert;
         current_voyage.start_time = fake_time;
 
-        auto okay_date = GetCurrentOkayDateByTime(cur_time);
+        auto okay_date = GetCurrentOkayDateByTime(fake_time);
         const auto& graph = date_to_graph.at(okay_date).at(ship_index);
         float time_to_next_vert = GetEdgeWeight(graph, current_vert, next_vert) / ship.speed;
         current_voyage.end_time = fake_time + time_to_next_vert;
 
-        fake_time = time_to_next_vert;
+        fake_time = current_voyage.end_time;
 
         path.push_back(current_voyage);
     }
@@ -291,7 +291,9 @@ std::pair<VertID, float> PathManager::GetNextVertexInShortestPath(VertID current
     }
 
     if (!found) {
-        throw std::runtime_error("lol no optimal path from " + std::to_string(current) + " to " + std::to_string(end));
+        throw std::runtime_error("lol no optimal path from " + std::to_string(current) + " to "
+                                    + std::to_string(end) + " for icebreaker " + std::to_string(icebreaker.id.id) + " caravan size "
+                                    + std::to_string(caravan.ships_id.size()));
     }
 
     return std::make_pair(optimal_neighbour, optimal_metric);
@@ -299,7 +301,7 @@ std::pair<VertID, float> PathManager::GetNextVertexInShortestPath(VertID current
 
 std::pair<int, int> PathManager::GetNextVertexInShortestPathAlone(VertID current, const Ship& ship, VertID end) const {
     int optimal_neighbour = -1;
-    float optimal_metric = std::numeric_limits<float>::infinity();
+    float optimal_metric = 10000.0f;
     bool found = false;
 
     size_t alone_ship_graph_index = alone_ship_class_to_index.at(ship.ice_class);
