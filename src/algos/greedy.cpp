@@ -201,16 +201,16 @@ Schedule algos::greedy(PathManager &manager, double *sum_res) {
                     if (icebreaker.cur_pos == ships[ship_id.id].cur_pos &&
                         caravans[icebreaker2caravan[icebreaker.id.id]].ships_id.size() < MAX_SHIPS)
                     {
-                        if (checkShipForCaravan(ships[ship_id.id], caravans[icebreaker2caravan[icebreaker.id.id]], manager)) {
+                        // if (checkShipForCaravan(ships[ship_id.id], caravans[icebreaker2caravan[icebreaker.id.id]], manager)) {
                             std::cout << "\t[" << icebreaker.id.id << "] picked_up " << ship_id.id << "\n";
                             caravans[icebreaker2caravan[icebreaker.id.id]].ships_id.insert(ship_id);
                             ships_in_caravans.insert(ship_id);
 
                             wait_time[ship_id] = manager.cur_time - ships[ship_id.id].voyage_start_date;
                             path_start[ship_id] = manager.cur_time;
-                        }
-                        else
-                            std::cout << "\t![" << icebreaker.id.id << "] not compaible with " << ship_id.id << "\n";
+                        // }
+                        // else
+                        //     std::cout << "\t![" << icebreaker.id.id << "] not compaible with " << ship_id.id << "\n";
                     }
         }
 
@@ -241,14 +241,14 @@ Schedule algos::greedy(PathManager &manager, double *sum_res) {
         for (const auto& ship: ships)
             if (ship.voyage_start_date <= manager.cur_time && !path_time.count(ship.id))
                 if (manager.getCurrentVoyage(ship.id).end_time == 0 && !sail_solo.count(ship.id.id)) {
-                    if (manager.TimeToArriveUnderFakeProvodka(ship, icebreakers[0], ship.cur_pos, ship.finish) < 1000) {
+                    // if (manager.TimeToArriveUnderFakeProvodka(ship, icebreakers[0], ship.cur_pos, ship.finish) < 1000) {
                         ships_waiting[ship.id] = weightShipAlone(ship, manager.cur_time, max_speed, cur_max_wait);
-                    }
-                    else {
+                    // }
+                    // else {
                         // std::cout << "SHIP " << ship.id.id << " CAN'T ARRIVE" << "\n";
-                        if (ships_waiting.count(ship.id))
-                            ships_waiting.erase(ship.id);
-                    }
+                        // if (ships_waiting.count(ship.id))
+                            // ships_waiting.erase(ship.id);
+                    // }
                 }
 
         for (const auto& [ship_id, _]: ships_waiting) {
@@ -315,8 +315,8 @@ Schedule algos::greedy(PathManager &manager, double *sum_res) {
                     // Decide to pick-up ship
                     if ((best_score < score_threshold || cur_caravan.ships_id.empty()) && // good score or empty caravan
                         cur_caravan.ships_id.size() < MAX_SHIPS && // check limit on caravan size
-                        !targeted_ships.count(best_ship_id) && // we dont want to target one ship by different icebreakers in one iteration
-                        checkShipForCaravan(ships[best_ship_id.id], caravans[icebreaker2caravan[icebreaker.id.id]], manager)) 
+                        !targeted_ships.count(best_ship_id)) // we dont want to target one ship by different icebreakers in one iteration
+                        // checkShipForCaravan(ships[best_ship_id.id], caravans[icebreaker2caravan[icebreaker.id.id]], manager)) 
                     {
                         std::cout << "\t[" << icebreaker.id.id << "] going for ship " << cur_ship.id.id << "\n";
 
@@ -341,14 +341,14 @@ Schedule algos::greedy(PathManager &manager, double *sum_res) {
                 auto [next, _] = manager.GetNearestVertex(icebreaker.cur_pos, icebreaker, drops);
 
                 // checkShipPossibilities(cur_caravan, icebreaker.cur_pos, next, manager, ships_in_caravans);
-                for (auto &ship_id: cur_caravan.ships_id) {
-                    if (!checkShipForCaravan(ships[ship_id.id], cur_caravan, manager)) {
-                        std::cout << "\t[" << cur_caravan.icebreaker_id->id << "] dropped" << ship_id.id << "\n";
-                        cur_caravan.ships_id.erase(ship_id);
-                        ships_in_caravans.erase(ship_id);
-                        manager.ship_to_voyage[ship_id.id] = Voyage{};
-                    }
-                }
+                // for (auto &ship_id: cur_caravan.ships_id) {
+                //     if (!checkShipForCaravan(ships[ship_id.id], cur_caravan, manager)) {
+                //         std::cout << "\t[" << cur_caravan.icebreaker_id->id << "] dropped" << ship_id.id << "\n";
+                //         cur_caravan.ships_id.erase(ship_id);
+                //         ships_in_caravans.erase(ship_id);
+                //         manager.ship_to_voyage[ship_id.id] = Voyage{};
+                //     }
+                // }
                 decision = manager.sail2depots(icebreaker, cur_caravan);
             }
 

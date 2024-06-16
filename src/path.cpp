@@ -6,6 +6,7 @@
 #include <iostream>
 #include <thread>
 #include <mutex>
+#include <stack>
 
 namespace {
 
@@ -139,9 +140,9 @@ float PathManager::TimeToArriveUnderFakeProvodka(const Ship& ship, const Icebrea
     fake_caravan.ships_id.insert(ship.id);
 
     while (current_vert != end) {
-        auto [next_vert, _] = GetNextVertexInShortestPath(current_vert, icebreaker, fake_caravan, end);
+        auto [next_vert, metric] = GetNextVertexInShortestPath(current_vert, icebreaker, fake_caravan, end);
 
-        if (next_vert == -1) {
+        if (next_vert == -1 || metric >= 1000.0f) {
             return std::numeric_limits<float>::infinity();
         }
 
@@ -210,7 +211,6 @@ PathManager::PathManager(DatesToIceGraph date_to_graph_, std::shared_ptr<Icebrea
 // build path to point, return next step
 Voyage PathManager::sail2point(const Icebreaker &icebreaker, const Caravan &caravan, VertID point) {
     auto [next_vertex, _] = GetNextVertexInShortestPath(icebreaker.cur_pos, icebreaker, caravan, point);
-    // std::cout << "!!! metric_to_vertex: " << metric_to_vertex << "cur: " << icebreaker.cur_pos << ", next: " << next_vertex << std::endl;
 
     size_t icebreaker_graph_index = GetIcebreakerIndexByName(icebreaker.name);
 
@@ -250,12 +250,97 @@ Voyage PathManager::sail2point(const Icebreaker &icebreaker, const Caravan &cara
     return voyage;
 }
 
+VertID PathManager::FindNewAchievablePoint(const Ship& ship, VertID from, std::unordered_set<VertID>& visited) {
+    std::vector<VertID> neighbours;
+
+    size_t ship_index = ship_class_to_index.at(ship.ice_class);
+
+    auto okay_date = GetCurrentOkayDateByTime(cur_time);
+    auto& graph = date_to_graph[okay_date].at(ship_index);
+    auto& distances = date_to_distances.at(okay_date).at(ship_index);
+
+    visited.insert(from);
+
+    for (auto edge : boost::make_iterator_range(boost::out_edges(from, graph))) {
+        auto target = boost::target(edge, graph);
+        if (visited.count(target) == 0) {
+            neighbours.push_back(target);
+        }
+    }
+
+    VertID optimal_new_finish = -1;
+    float optimal_weight_to_new_finish = -1;
+    bool found = false;
+
+    for (auto neighbour : neighbours) {
+        if (visited.count(neighbour) == 1) {
+            continue;
+        }
+
+        visited.insert(neighbour);
+
+        if (distances[ship.cur_pos][neighbour] < 1000.0f) {
+            if (!found || distances[ship.cur_pos][neighbour] < distances[ship.cur_pos][optimal_new_finish]) {
+                optimal_new_finish = neighbour;
+                found = true;
+            }
+        }
+    }
+
+    if (found) {
+        return optimal_new_finish;
+    }
+
+    for (auto neighbour : neighbours) {
+        auto another_achievable = FindNewAchievablePoint(ship, neighbour, visited);
+        if (another_achievable != -1 && distances[ship.cur_pos][another_achievable] < 1000.0f) {
+            if (!found || distances[ship.cur_pos][another_achievable] < distances[ship.cur_pos][optimal_new_finish]) {
+                optimal_new_finish = another_achievable;
+                found = true;
+            }
+        }
+    }
+
+    if (!found) {
+        throw std::runtime_error("no new_finish thats nonsense");
+    }
+
+    return optimal_new_finish;
+}
+
+void PathManager::FixFinishForWeakShips(const std::vector<int>& weak_ships, const Icebreaker& icebreaker) {
+    std::unordered_set<VertID> visited;
+    for (auto weak_id : weak_ships) {
+        auto time = TimeToArriveUnderFakeProvodka((*ships)[weak_id], icebreaker, (*ships)[weak_id].cur_pos, (*ships)[weak_id].finish);
+        // finish is okay
+        if (time < 10000.0f) {
+            continue;
+        }
+
+        // now find
+        auto new_finish = FindNewAchievablePoint((*ships)[weak_id], (*ships)[weak_id].finish, visited);
+        if (new_finish == -1) {
+            throw std::runtime_error("new_finish == -1 it's nonsense");
+        }
+        (*ships)[weak_id].finish = new_finish;
+    }
+}
+
 // build path to all icebreaker's caravan final points, return next step
 Voyage PathManager::sail2depots(const Icebreaker &icebreaker, const Caravan &caravan) {
     std::vector<VertID> all_caravan_end_points;
     for (auto ship_id : caravan.ships_id) {
         all_caravan_end_points.push_back((*ships)[ship_id.id].finish);
     }
+
+    std::vector<int> ship_ids_of_zero_ice_class;
+    for (auto ship_id : caravan.ships_id) {
+        if (int((*ships)[ship_id.id].ice_class) >= int(IceClass::kNoIceClass) && int((*ships)[ship_id.id].ice_class) <= int(IceClass::kArc3)) {
+            ship_ids_of_zero_ice_class.push_back(ship_id.id);
+        }
+    }
+
+    FixFinishForWeakShips(ship_ids_of_zero_ice_class, icebreaker);
 
     // тут должно быть оптимальное построение пути по всем точкам (задача коммивояжера), но пока здесь путь до первой попавшейся
     if (!all_caravan_end_points.empty()) {
@@ -295,7 +380,6 @@ std::pair<VertID, float> PathManager::GetNextVertexInShortestPath(VertID current
     float optimal_metric = std::numeric_limits<float>::infinity();
     bool found = false;
 
-    // std::cout << "search for path from " << current << " to " << end << std::endl;
 
     size_t icebreaker_graph_index = GetIcebreakerIndexByName(icebreaker.name);
 
@@ -323,14 +407,6 @@ std::pair<VertID, float> PathManager::GetNextVertexInShortestPath(VertID current
                 // значит самый медленный - один из кораблей, значит будем считать скорость каравана по нему
                 auto& graph = date_to_graph.at(okay_date).at(ship_class_to_index.at((*ships)[min_ship_id].ice_class));
                 auto& distances = date_to_distances.at(okay_date).at(ship_class_to_index.at((*ships)[min_ship_id].ice_class));
-
-                // std::cout << "min_caravan_peed: " << minimal_caravan_speed << " and its ship.id: " << min_ship_id
-                //           << ", from: " << current << ", to: " << target << ", end: " << end
-                //           << ", edge_weight: " << GetEdgeWeight(graph, current, target)
-                //           << ", distance: " << distances[target][end]
-                //           << ", okay_date: " << okay_date
-                //           << ", index_map: " << ship_class_to_index.at((*ships)[min_ship_id].ice_class)
-                //           << std::endl;
 
                 // все дебафы уже учтены в графе, просто нужно отдельно учитывать, что корабль в некоторых случаях не может идти по ребру сам
                 metric = GetEdgeWeight(graph, current, target) / minimal_caravan_speed + distances[target][end] / minimal_caravan_speed;
