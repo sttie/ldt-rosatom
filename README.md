@@ -7,7 +7,7 @@ git submodule init --recursive
 git submodule update
 ```
 
-## Сборка
+## Сборка и запуск
 
 ### Linux/MacOS
 
@@ -16,8 +16,11 @@ mkdir build
 cd build
 cmake -DOPENXLSX_BUILD_TESTS=OFF ..
 make
-./scheduler
+cp scheduler ../
+bash run.sh
 ```
+
+После выполнения скрипта run.sh появится json файл с результатом. Нужно зайти на сайт website/index.html и открыть этот json файл на сайте. 
 
 ### Windows
 
@@ -39,3 +42,5 @@ start Debug\scheduler.exe
 # ИЛИ (зависит от настроек системы)
 start Release\scheduler.exe
 ```
+
+Для корректного запуска scheduler.exe требуется повторить действия скрипта run.sh
