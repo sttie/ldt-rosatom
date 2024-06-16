@@ -5,7 +5,7 @@
 }
 
 #myCanvas {
-    background-image: url("main.png");
+    background-image: url("main_0.png");
     background-size: 2033.33px 990.66px;
 }
 
@@ -13,4 +13,77 @@
     width: 1000px;
     margin: 0 auto;
     display:block;
+ 
+}
+
+#gan{
+    display:inline-block;
+    width:900px;
+}
+
+#t{
+    display:inline-block;
+    width:50px;
+    vertical-align: top;
+    margin-top:74px;
+}
+
+#t td {
+    padding-top: 14.8px;
+    padding-bottom: 14.8px;
+}
+
+.cc-green g rect{
+    fill: #005301 !important;
+}
+
+.cc-blue g rect{
+    fill: #00bfff !important;
+}
+
+.cc-orange g rect{
+    fill: #d4a004 !important;
+}
+
+.cc-red g rect{
+    fill: #a8000e !important;
+}
+
+.cc-purple g rect{
+    fill: #800d88 !important;
+}
+
+.cc-grey g rect{
+    fill: #474048 !important;
+}
+
+.cc-light-green g rect{
+    fill: #33a26b !important;
+}
+
+.cc-light-purple g rect{
+    fill: #ac67cf !important;
+}
+
+.cc-light-blue g rect{
+    fill: #2c83c9 !important;
+}
+
+.cc-light-green g rect{
+    fill: #3cae8c !important;
+}
+
+.cc-light-orange g rect{
+    fill: #ab7632 !important;
+}
+
+.gantt-container{
+
+    overflow-x:scroll;
+    height: auto;
+    width: 1000px;
+}
+
+.cc-ships g rect{
+    fill: #21389e !important;
 }
