@@ -6,6 +6,7 @@
 #include <iostream>
 #include <thread>
 #include <mutex>
+#include <stack>
 
 namespace {
 
@@ -250,12 +251,83 @@ Voyage PathManager::sail2point(const Icebreaker &icebreaker, const Caravan &cara
     return voyage;
 }
 
+VertID PathManager::FindNewAchievablePoint(const Ship& ship, VertID from) {
+    std::vector<VertID> neighbours;
+
+    size_t ship_index = ship_class_to_index.at(ship.ice_class);
+
+    auto okay_date = GetCurrentOkayDateByTime(cur_time);
+    auto& graph = date_to_graph[okay_date].at(ship_index);
+    auto& distances = date_to_distances.at(okay_date).at(ship_index);
+
+    for (auto edge : boost::make_iterator_range(boost::out_edges(from, graph))) {
+        auto target = boost::target(edge, graph);
+        neighbours.push_back(target);
+    }
+
+    VertID optimal_new_finish = -1;
+    float optimal_weight_to_new_finish = -1;
+    bool found = false;
+
+    for (auto neighbour : neighbours) {
+        if (distances[ship.cur_pos][neighbour] < 1000.0f) {
+            if (!found || distances[ship.cur_pos][neighbour] < distances[ship.cur_pos][optimal_new_finish]) {
+                optimal_new_finish = neighbour;
+                found = true;
+            }
+        }
+        // значит вершина недостижима для ship из ship.cur_pos
+        else {
+            auto new_achievable = FindNewAchievablePoint(ship, neighbour);
+            if (new_achievable == -1) {
+                // throw std::runtime_error("new_achievable == -1 it's nonsense");
+                continue; // !!!
+            }
+
+            if (distances[ship.cur_pos][new_achievable] < 1000.0f) {
+                if (!found || distances[ship.cur_pos][new_achievable] < distances[ship.cur_pos][optimal_new_finish]) {
+                    optimal_new_finish = new_achievable;
+                    found = true;
+                }
+            }
+        }
+    }
+
+    return optimal_new_finish;
+}
+
+void PathManager::FixFinishForWeakShips(const std::vector<int>& weak_ships, const Icebreaker& icebreaker) {
+    for (auto weak_id : weak_ships) {
+        auto time = TimeToArriveUnderFakeProvodka((*ships)[weak_id], icebreaker, (*ships)[weak_id].cur_pos, (*ships)[weak_id].finish);
+        // finish is okay
+        if (time < 10000.0f) {
+            continue;
+        }
+
+        // now find
+        auto new_finish = FindNewAchievablePoint((*ships)[weak_id], (*ships)[weak_id].finish);
+        if (new_finish == -1) {
+            throw std::runtime_error("new_finish == -1 it's nonsense");
+        }
+        (*ships)[weak_id].finish = new_finish;
+    }
+}
+
 // build path to all icebreaker's caravan final points, return next step
 Voyage PathManager::sail2depots(const Icebreaker &icebreaker, const Caravan &caravan) {
     std::vector<VertID> all_caravan_end_points;
     for (auto ship_id : caravan.ships_id) {
         all_caravan_end_points.push_back((*ships)[ship_id.id].finish);
     }
+
+    std::vector<int> ship_ids_of_zero_ice_class;
+    for (auto ship_id : caravan.ships_id) {
+        if (int((*ships)[ship_id.id].ice_class) >= int(IceClass::kNoIceClass) && int((*ships)[ship_id.id].ice_class) <= int(IceClass::kArc3)) {
+            ship_ids_of_zero_ice_class.push_back(ship_id.id);
+        }
+    }
+
+    FixFinishForWeakShips(ship_ids_of_zero_ice_class, icebreaker);
 
     // тут должно быть оптимальное построение пути по всем точкам (задача коммивояжера), но пока здесь путь до первой попавшейся
     if (!all_caravan_end_points.empty()) {
