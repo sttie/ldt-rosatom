@@ -51,7 +51,10 @@ void FloydWarshallThread(
         DistanceMatrixByGraph(ice_graphs_[3]),
         DistanceMatrixByGraph(ice_graphs_[4]),
         DistanceMatrixByGraph(ice_graphs_[5]),
-        DistanceMatrixByGraph(ice_graphs_[6])
+        DistanceMatrixByGraph(ice_graphs_[6]),
+        DistanceMatrixByGraph(ice_graphs_[7]),
+        DistanceMatrixByGraph(ice_graphs_[8]),
+        DistanceMatrixByGraph(ice_graphs_[9])
     };
 
     date_to_distances_mutex.lock();
@@ -59,46 +62,37 @@ void FloydWarshallThread(
     date_to_distances_mutex.unlock();
 }
 
-float GetDebuffAlone(IceClass ice_class, int edge_ice_type) {
-    if (edge_ice_type == 0) {
-        return 1.0f;
-    }
-
-    int ice_class_int = static_cast<int>(ice_class);
-    if (ice_class_int >= int(IceClass::kNoIceClass) && ice_class_int <= int(IceClass::kArc3)) {
-        return 0.0f;
-    } else if (ice_class_int >= int(IceClass::kArc4) && ice_class_int <= int(IceClass::kArc6)) {
-        return 0.0f;
-    } else if (ice_class_int == int(IceClass::kArc7)) {
-        if (edge_ice_type == 1) {
-            return 1.0f;
-        } else {
-            return 0.0f;
-        }
-    }
-
-    throw std::runtime_error("invalid ice_class debuff under provodka: ice_class=" + std::to_string(ice_class_int) + ", edge_ice_type=" + std::to_string(edge_ice_type));
-}
-
 }
 
 // возвращает пустой вектор, если пути В ОДИНОЧКУ не существует
-std::vector<VertID> PathManager::GetShortestPathAlone(const Ship& ship, VertID start, VertID end) const {
-    std::vector<VertID> path;
+std::vector<Voyage> PathManager::GetShortestPathAlone(const Ship& ship, VertID start, VertID end) const {
+    std::vector<Voyage> path;
+
+    size_t ship_index = ship_class_to_index.at(ship.ice_class);
 
     VertID current_vert = start;
-    path.push_back(start);
+    Days fake_time = cur_time;
 
     while (current_vert != end) {
-        auto [next_vert, edge_ice_type] = GetNextVertexInShortestPath(current_vert, ship, end);
+        auto [next_vert, edge_ice_type] = GetNextVertexInShortestPathAlone(current_vert, ship, end);
 
-        auto debuff = GetDebuffAlone(ship.ice_class, edge_ice_type);
-        if (debuff == 0.0f) {
+        if (next_vert == -1) {
             return {};
-        } else {
-            path.push_back(next_vert);
-            current_vert = next_vert;
         }
+
+        Voyage current_voyage;
+        current_voyage.start_point = current_vert;
+        current_voyage.end_point = next_vert;
+        current_voyage.start_time = fake_time;
+
+        auto okay_date = GetCurrentOkayDateByTime(cur_time);
+        const auto& graph = date_to_graph.at(okay_date).at(ship_index);
+        float time_to_next_vert = GetEdgeWeight(graph, current_vert, next_vert) / ship.speed;
+        current_voyage.end_time = fake_time + time_to_next_vert;
+
+        fake_time = time_to_next_vert;
+
+        path.push_back(current_voyage);
     }
 
     return path;
@@ -124,15 +118,14 @@ float PathManager::TimeToArriveAlone(const Ship& ship, VertID start, VertID end)
     float time = 0;
 
     while (current_vert != end) {
-        auto [next_vert, edge_ice_type] = GetNextVertexInShortestPath(current_vert, ship, end);
+        auto [next_vert, edge_ice_type] = GetNextVertexInShortestPathAlone(current_vert, ship, end);
 
-        auto debuff = GetDebuffAlone(ship.ice_class, edge_ice_type);
-        if (debuff == 0.0f) {
+        if (next_vert == -1) {
             return std::numeric_limits<float>::infinity();
-        } else {
-            time += (GetEdgeLen(graph, current_vert, next_vert) / (debuff * ship.speed));
-            current_vert = next_vert;
         }
+
+        time += (GetEdgeWeight(graph, current_vert, next_vert) / ship.speed);
+        current_vert = next_vert;
     }
 
     return time;
@@ -158,8 +151,9 @@ PathManager::PathManager(DatesToIceGraph date_to_graph_, std::shared_ptr<Icebrea
 }
 
 // build path to point, return next step
-Voyage PathManager::sail2point(const Icebreaker &icebreaker, VertID point) {
-    auto [next_vertex, metric_to_vertex] = GetNextVertexInShortestPath(icebreaker.cur_pos, icebreaker, point);
+Voyage PathManager::sail2point(const Icebreaker &icebreaker, const Caravan &caravan, VertID point) {
+    auto [next_vertex, _] = GetNextVertexInShortestPath(icebreaker.cur_pos, icebreaker, caravan, point);
+    // std::cout << "!!! metric_to_vertex: " << metric_to_vertex << "cur: " << icebreaker.cur_pos << ", next: " << next_vertex << std::endl;
 
     size_t icebreaker_graph_index = GetIcebreakerIndexByName(icebreaker.name);
 
@@ -170,12 +164,12 @@ Voyage PathManager::sail2point(const Icebreaker &icebreaker, VertID point) {
     voyage.start_time = cur_time;
     voyage.start_point = icebreaker.cur_pos;
     // GetEdgeWeight возвращает для ледоколов ВРЕМЯ, поэтому все ок, ни на что делить не нужно
-    if (icebreaker.caravan.ships_id.empty()) {
+    if (caravan.ships_id.empty()) {
         // если караван пустой, скорость складывается только из веса ребер
         voyage.end_time = cur_time + GetEdgeWeight(graph, icebreaker.cur_pos, next_vertex);
     } else {
         auto [edge, _] = boost::edge(icebreaker.cur_pos, next_vertex, graph);
-        auto [min_speed, min_speed_ship_id] = GetMinimalSpeedInCaravan(icebreaker.caravan, graph[edge].ice_type);
+        auto [min_speed, min_speed_ship_id] = GetMinimalSpeedInCaravan(caravan, graph[edge].ice_type);
 
         // если самый медленный - ледокол
         if (min_speed_ship_id == -1) {
@@ -193,25 +187,25 @@ Voyage PathManager::sail2point(const Icebreaker &icebreaker, VertID point) {
     voyage.end_point = next_vertex;
 
     icebreaker_to_voyage[icebreaker.id] = voyage;
-    for (auto &ship_id: icebreaker.caravan.ships_id)
+    for (auto &ship_id: caravan.ships_id)
         ship_to_voyage[ship_id] = voyage;
 
     return voyage;
 }
 
 // build path to all icebreaker's caravan final points, return next step
-Voyage PathManager::sail2depots(const Icebreaker &icebreaker) {
+Voyage PathManager::sail2depots(const Icebreaker &icebreaker, const Caravan &caravan) {
     std::vector<VertID> all_caravan_end_points;
-    for (auto ship_id : icebreaker.caravan.ships_id) {
+    for (auto ship_id : caravan.ships_id) {
         all_caravan_end_points.push_back((*ships)[ship_id.id].finish);
     }
 
     // тут должно быть оптимальное построение пути по всем точкам (задача коммивояжера), но пока здесь путь до первой попавшейся
     if (!all_caravan_end_points.empty()) {
         auto [next, new_dist] = GetNearestVertex(icebreaker.cur_pos, icebreaker, all_caravan_end_points);
-        auto res = sail2point(icebreaker, next);
+        auto res = sail2point(icebreaker, caravan, next);
         icebreaker_to_voyage[icebreaker.id] = res;
-        for (auto &ship_id: icebreaker.caravan.ships_id)
+        for (auto &ship_id: caravan.ships_id)
             ship_to_voyage[ship_id] = res;
         return res;
     }
@@ -230,10 +224,21 @@ Voyage PathManager::getCurrentVoyage(IcebreakerId icebreaker_id) {
     return {};
 }
 
-std::pair<VertID, float> PathManager::GetNextVertexInShortestPath(VertID current, const Icebreaker& icebreaker, VertID end) const {
+Voyage PathManager::getCurrentVoyage(const Caravan &caravan) {
+    if (caravan.icebreaker_id && icebreaker_to_voyage.count(caravan.icebreaker_id->id))
+        return icebreaker_to_voyage[caravan.icebreaker_id->id];
+    if (!caravan.ships_id.empty() && ship_to_voyage.count(*caravan.ships_id.begin()))
+        return ship_to_voyage[caravan.ships_id.begin()->id];
+    return {};
+}
+
+std::pair<VertID, float> PathManager::GetNextVertexInShortestPath(VertID current,
+        const Icebreaker& icebreaker, const Caravan& caravan, VertID end) const {
     int optimal_neighbour;
     float optimal_metric = std::numeric_limits<float>::infinity();
     bool found = false;
+
+    // std::cout << "search for path from " << current << " to " << end << std::endl;
 
     size_t icebreaker_graph_index = GetIcebreakerIndexByName(icebreaker.name);
 
@@ -245,13 +250,13 @@ std::pair<VertID, float> PathManager::GetNextVertexInShortestPath(VertID current
 
         float metric;
         // GetEdgeWeight возвращает для ледоколов ВРЕМЯ, поэтому все ок, ни на что делить не нужно
-        if (icebreaker.caravan.ships_id.empty()) {
+        if (caravan.ships_id.empty()) {
             // если караван пустой, скорость складывается только из весов ребер
             auto& icebreaker_distances = date_to_distances.at(okay_date).at(icebreaker_graph_index);
             metric = GetEdgeWeight(icebreaker_graph, current, target) + icebreaker_distances[target][end];
         } else {
             auto [edge, _] = boost::edge(current, target, icebreaker_graph);
-            auto [minimal_caravan_speed, min_ship_id] = GetMinimalSpeedInCaravan(icebreaker.caravan, icebreaker_graph[edge].ice_type);
+            auto [minimal_caravan_speed, min_ship_id] = GetMinimalSpeedInCaravan(caravan, icebreaker_graph[edge].ice_type);
 
             if (min_ship_id == -1) {
                 // значит самый медленный - ледокол, а для него уже посчитана метрика в edge.weight
@@ -262,6 +267,14 @@ std::pair<VertID, float> PathManager::GetNextVertexInShortestPath(VertID current
                 auto& graph = date_to_graph.at(okay_date).at(ship_class_to_index.at((*ships)[min_ship_id].ice_class));
                 auto& distances = date_to_distances.at(okay_date).at(ship_class_to_index.at((*ships)[min_ship_id].ice_class));
 
+                // std::cout << "min_caravan_peed: " << minimal_caravan_speed << " and its ship.id: " << min_ship_id
+                //           << ", from: " << current << ", to: " << target << ", end: " << end
+                //           << ", edge_weight: " << GetEdgeWeight(graph, current, target)
+                //           << ", distance: " << distances[target][end]
+                //           << ", okay_date: " << okay_date
+                //           << ", index_map: " << ship_class_to_index.at((*ships)[min_ship_id].ice_class)
+                //           << std::endl;
+
                 // все дебафы уже учтены в графе, просто нужно отдельно учитывать, что корабль в некоторых случаях не может идти по ребру сам
                 metric = GetEdgeWeight(graph, current, target) / minimal_caravan_speed + distances[target][end] / minimal_caravan_speed;
             }
@@ -271,6 +284,9 @@ std::pair<VertID, float> PathManager::GetNextVertexInShortestPath(VertID current
             optimal_neighbour = target;
             optimal_metric = metric;
             found = true;
+
+            // std::cout << "new optimal: " << metric << " to " << optimal_neighbour << " from " << current
+            //           << ", taken edge: " << boost::source(neighbour, icebreaker_graph) << std::endl;
         }
     }
 
@@ -281,22 +297,21 @@ std::pair<VertID, float> PathManager::GetNextVertexInShortestPath(VertID current
     return std::make_pair(optimal_neighbour, optimal_metric);
 }
 
-std::pair<int, int> PathManager::GetNextVertexInShortestPath(VertID current, const Ship& ship, VertID end) const {
+std::pair<int, int> PathManager::GetNextVertexInShortestPathAlone(VertID current, const Ship& ship, VertID end) const {
     int optimal_neighbour = -1;
     float optimal_metric = std::numeric_limits<float>::infinity();
     bool found = false;
 
-    size_t ship_graph_index = ship_class_to_index.at(ship.ice_class);
+    size_t alone_ship_graph_index = alone_ship_class_to_index.at(ship.ice_class);
 
     auto okay_date = GetCurrentOkayDateByTime(cur_time);
-    auto& graph = date_to_graph.at(okay_date).at(ship_graph_index);
-    auto& distances = date_to_distances.at(okay_date).at(ship_graph_index);
+    auto& graph = date_to_graph.at(okay_date).at(alone_ship_graph_index);
+    auto& distances = date_to_distances.at(okay_date).at(alone_ship_graph_index);
 
     for (auto neighbour : boost::make_iterator_range(boost::out_edges(current, graph))) {
         int target = boost::target(neighbour, graph);
 
         auto [edge, _] = boost::edge(current, target, graph);
-        // все дебафы уже учтены в графе, просто нужно отдельно учитывать, что корабль в некоторых случаях не может идти по ребру сам
         float metric = GetEdgeWeight(graph, current, target) / ship.speed + distances[target][end] / ship.speed;
 
         if (metric < optimal_metric) {
@@ -315,7 +330,7 @@ std::pair<int, int> PathManager::GetNextVertexInShortestPath(VertID current, con
 }
 
 std::pair<float, int> PathManager::GetMinimalSpeedInCaravan(const Caravan& caravan, int edge_ice_type) const {
-    float min_speed = (*icebreakers)[caravan.icebreaker_id.id].speed;
+    float min_speed = (*icebreakers)[caravan.icebreaker_id->id].speed;
     int min_sheep_id = -1;
 
     for (auto ship_id : caravan.ships_id) {

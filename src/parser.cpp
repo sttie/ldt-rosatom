@@ -76,6 +76,18 @@ std::array<float, 4> GetIcebreakerSpeed(int ice_type, const std::vector<Icebreak
     throw std::runtime_error("invalid ice_type: " + std::to_string(ice_type));
 }
 
+std::array<float, 3> GetDebuffAlone(int edge_ice_type) {
+    if (edge_ice_type == 0) {
+        return {1.0f, 1.0f, 1.0f};
+    } else if (edge_ice_type == 1) {
+        return {0.0f, 0.0f, 1.0f};
+    } else if (edge_ice_type == 2) {
+        return {0.0f, 0.0f, 0.0f};
+    } else {
+        return {0.0f, 0.0f, 0.0f};
+    }
+}
+
 }
 
 GraphPointsInfo ParseGraphPointsFromExcel(const std::string& graph_filepath) {
@@ -186,6 +198,7 @@ DatesToIceGraph ParseGraphFromJson(
 
             auto ship_debuffs = GetShipIceDebuff(property.ice_type);
             auto icebreakers_speeds = GetIcebreakerSpeed(property.ice_type, *icebreakers);
+            auto alone_ship_debuffs = GetDebuffAlone(property.ice_type);
 
             size_t graph_type_index = 0;
             for (float debuff : ship_debuffs) {
@@ -194,13 +207,9 @@ DatesToIceGraph ParseGraphFromJson(
                 } else {
                     property.weight = property.len / debuff;
                 }
-
-                if (property.start_id == 202 && property.end_id == 25) {
-                    std::cout << "debuff: " << debuff << ", weight: " << property.weight << ", len: " << property.len << std::endl;
-                }
-
                 boost::add_edge(property.start_id, property.end_id, property, date_to_graph[date][graph_type_index++]);
             }
+
             for (float icebreaker_speed : icebreakers_speeds) {
                 if (icebreaker_speed == 0.0f) {
                     property.weight = std::numeric_limits<float>::infinity();
@@ -208,8 +217,14 @@ DatesToIceGraph ParseGraphFromJson(
                     property.weight = property.len / icebreaker_speed;
                 }
 
-                if (property.start_id == 202 && property.end_id == 25) {
-                    std::cout << "icebreaker_speed: " << icebreaker_speed << ", weight: " << property.weight << ", len: " << property.len << std::endl;
+                boost::add_edge(property.start_id, property.end_id, property, date_to_graph[date][graph_type_index++]);
+            }
+
+            for (float debuff : alone_ship_debuffs) {
+                if (debuff == 0.0f) {
+                    property.weight = std::numeric_limits<float>::infinity();
+                } else {
+                    property.weight = property.len / debuff;
                 }
 
                 boost::add_edge(property.start_id, property.end_id, property, date_to_graph[date][graph_type_index++]);
@@ -355,7 +370,6 @@ IcebreakersPtr ParseIcebreakers(const std::string& dataset_path, const GraphPoin
         icebreaker.cur_pos = getVertID(wks.cell("F" + std::to_string(row)).value().getString(), graph_points_info);
 
         icebreaker.id = IcebreakerId{index++};
-        icebreaker.caravan = Caravan{{}, icebreaker.id};
 
         icebreakers->push_back(std::move(icebreaker));
     }

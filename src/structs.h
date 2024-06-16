@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <memory>
 #include <set>
+#include <map>
 #include <array>
 #include <boost/optional.hpp>
 
@@ -144,7 +145,7 @@ struct std::hash<IcebreakerId> {
 
 struct Caravan {
     std::set<ShipId> ships_id;
-    IcebreakerId icebreaker_id;
+    boost::optional<IcebreakerId> icebreaker_id;
 };
 
 struct Ship {
@@ -163,7 +164,6 @@ struct Icebreaker {
     float speed; // on clean water!
     IceClass ice_class;
     VertID cur_pos;
-    Caravan caravan;
 };
 
 using Ships = std::vector<Ship>;
@@ -172,18 +172,17 @@ using Icebreakers = std::vector<Icebreaker>;
 using IcebreakersPtr = std::shared_ptr<Icebreakers>;
 
 struct SheculeAtom {
-    Caravan ships_id;
+    Caravan caravan;
     Voyage edge_voyage;
-    boost::optional<IcebreakerId> icebreaker_id;
 };
 
 typedef std::vector<SheculeAtom> Schedule; // result of algorithm - caravan + path
 
-inline std::string CaravanToString(const Caravan& caravan) {
+inline std::string CaravanToString(const std::set<ShipId> &caravan) {
     std::string caravan_str = "{";
-    for (auto it = caravan.ships_id.begin(); it != caravan.ships_id.end(); ++it) {
+    for (auto it = caravan.begin(); it != caravan.end(); ++it) {
         caravan_str += std::to_string(it->id);
-        if (it != std::prev(caravan.ships_id.end())) {
+        if (it != std::prev(caravan.end())) {
             caravan_str += ", ";
         }
     }
@@ -191,3 +190,29 @@ inline std::string CaravanToString(const Caravan& caravan) {
 
     return caravan_str;
 }
+
+
+using WeightedShips = std::map<ShipId, float>;
+using WeightedIcebreakers = std::map<IcebreakerId, float>;
+
+typedef std::vector<Caravan> Caravans;
+
+struct compCaravans {
+    WeightedIcebreakers icebreakers;
+    WeightedShips ships;
+
+    bool operator()(const Caravan &a, const Caravan &b) {
+        // lonely ships must be parsed before icebreakers
+        if (a.icebreaker_id.is_initialized() != b.icebreaker_id.is_initialized())
+            return a.icebreaker_id.is_initialized() < b.icebreaker_id.is_initialized();
+
+        // caravans with icebreakers
+        if (a.icebreaker_id.is_initialized())
+            return icebreakers[a.icebreaker_id->id] < icebreakers[b.icebreaker_id->id];
+        
+        // lonely ships
+        return ships[*a.ships_id.begin()] < ships[*b.ships_id.begin()];
+    }
+};
+
+typedef std::set<Caravan, compCaravans> SortedCaravans;

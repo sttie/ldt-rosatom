@@ -55,7 +55,21 @@ const std::unordered_map<IceClass, size_t> ship_class_to_index = {
     {IceClass::kArc7, 2},
 };
 
-constexpr size_t GRAPH_CLASSES_AMOUNT = 7;
+const std::unordered_map<IceClass, size_t> alone_ship_class_to_index = {
+    {IceClass::kNoIceClass, 7},
+    {IceClass::kArc1, 7},
+    {IceClass::kArc2, 7},
+    {IceClass::kArc3, 7},
+
+    {IceClass::kArc4, 8},
+    {IceClass::kArc5, 8},
+    {IceClass::kArc6, 8},
+
+    {IceClass::kArc7, 9},
+};
+
+constexpr size_t GRAPH_CLASSES_AMOUNT = 10;
+
 using DatesToIceGraph = std::unordered_map<std::string, std::array<Graph, GRAPH_CLASSES_AMOUNT>>;
 using DatesToDistances = std::unordered_map<std::string, std::array<DistanceMatrix, GRAPH_CLASSES_AMOUNT>>;
 
@@ -86,24 +100,23 @@ inline auto GetEdgeLen(
 class PathManager {
 private:
     DatesToIceGraph date_to_graph;
-    Routes routes;
-
-    std::unordered_map<ShipId, Voyage> ship_to_voyage;
-    std::unordered_map<IcebreakerId, Voyage> icebreaker_to_voyage;
-
     DatesToDistances date_to_distances;
 
 public:
     Days cur_time = 0;
     std::shared_ptr<Icebreakers> icebreakers;
     std::shared_ptr<Ships> ships;
+    std::unordered_map<ShipId, Voyage> ship_to_voyage;
+    std::unordered_map<IcebreakerId, Voyage> icebreaker_to_voyage;
+
     PathManager(DatesToIceGraph date_to_graph, std::shared_ptr<Icebreakers> icebreakers, std::shared_ptr<Ships> ships);
     // build path to point, return next step, update current_route for all boats in caravan
-    Voyage sail2point(const Icebreaker &icebreaker, VertID point);
+    Voyage sail2point(const Icebreaker &icebreaker, const Caravan &caravan, VertID point);
     // build path to all icebreaker's caravan final points, return next step, update current_route
-    Voyage sail2depots(const Icebreaker &icebreaker);
+    Voyage sail2depots(const Icebreaker &icebreaker, const Caravan &caravan);
     Voyage getCurrentVoyage(ShipId ship_id);
     Voyage getCurrentVoyage(IcebreakerId icebreaker_id);
+    Voyage getCurrentVoyage(const Caravan &caravan);
 
     std::pair<VertID, float> GetNearestVertex(VertID source, const Icebreaker& icebreaker, const std::vector<VertID>& vertexes) const;
     std::pair<VertID, float> GetNearestVertex(VertID source, const Ship& ship, const std::vector<VertID>& vertexes) const;
@@ -112,13 +125,12 @@ public:
     float TimeToArriveUnderFakeProvodka(const Ship& ship, VertID start, VertID end) const;
     float TimeToArriveAlone(const Ship& ship, VertID start, VertID end) const;
 
-    std::vector<VertID> GetShortestPathAlone(const Ship& ship, VertID start, VertID end) const;
+    std::vector<Voyage> GetShortestPathAlone(const Ship& ship, VertID start, VertID end) const;
 
 private:
-    std::pair<VertID, float> GetNextVertexInShortestPath(VertID current, const Icebreaker& icebreaker, VertID end) const;
-    std::pair<int, int> GetNextVertexInShortestPath(VertID current, const Ship& ship, VertID end) const;
+    std::pair<VertID, float> GetNextVertexInShortestPath(VertID current, const Icebreaker& icebreaker, const Caravan& caravan, VertID end) const;
+    std::pair<int, int> GetNextVertexInShortestPathAlone(VertID current, const Ship& ship, VertID end) const;
 
     std::pair<float, int> GetMinimalSpeedInCaravan(const Caravan& caravan, int edge_ice_type) const;
     std::string GetCurrentOkayDateByTime(Days time) const;
 };
-
