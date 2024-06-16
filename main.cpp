@@ -62,7 +62,7 @@ int main() {
 
     std::cout << "ships has been read!" << std::endl;
 
-    auto graph = parser::ParseGraphFromJson("../dataset/vertices.json", "../dataset/edges.json", icebreakers);
+    auto graph = parser::ParseGraphFromJson("../run/vertices.json", "../run/edges.json", icebreakers);
 
     /** Дополнительная подготовка данных **/
 
@@ -122,17 +122,17 @@ int main() {
         schedule << "\n";
     }
 
-    std::ifstream ifs_vertices("../dataset/vertices.json");
+    std::ifstream ifs_vertices("../run/vertices.json");
     json jf_vertices = json::parse(ifs_vertices);
 
-    std::ifstream ifs_edges("../dataset/edges.json");
+    std::ifstream ifs_edges("../run/edges.json");
     json jf_edges = json::parse(ifs_edges);
 
     res_json["edges"] = jf_edges;
     res_json["vertices"] = jf_vertices;
     res_json["sum"] = sum;
 
-    std::ofstream o("schedule.json");
+    std::ofstream o("../run/schedule_raw.json");
     o << std::setw(4) << res_json << std::endl;
     schedule.close();
 

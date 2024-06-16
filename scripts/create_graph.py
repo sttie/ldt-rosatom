@@ -234,15 +234,15 @@ for week in excel_reader.sheet_names[2:]:
                             edge["type"][week] = g.type
 
 for edge in new_edges:
-    if edge["end"] == 25 or edge["start"] == 25:
+    if edge["end"] == 25 or edge["start"] == 25 or (edge["start"] == 233 and edge["end"] == 234) or (edge["start"] == 10 and edge["end"] == 233):
         for week in edge["type"]:
-            edge["type"][week] = 1
+            if week == "21-Apr-2020" or week == "28-Apr-2020" or week == "05-May-2020" or week == "12-May-2020" or week == "19-May-2020" or week == "26-May-2020":
+                edge["type"][week] = 1
 
-
-with open("edges.json", "w") as f:
+with open("../run/edges.json", "w") as f:
     json.dump(new_edges, f, ensure_ascii=False, indent=2)
     
-with open("vertices.json", "w") as f:
+with open("../run/vertices.json", "w") as f:
     json.dump(all_vertices, f, ensure_ascii=False, indent=2)
 
 shp = geopandas.read_file("../dataset/goas/goas_v01.shp").set_crs("EPSG:4326")
@@ -275,5 +275,5 @@ for week in excel_reader.sheet_names[2:]:
     
     
 
-    plt.savefig('../dataset/main_' + str(idx) + '.png', bbox_inches='tight', dpi=1500, pad_inches=0.0)
+    plt.savefig('../run/main_' + str(idx) + '.png', bbox_inches='tight', dpi=1500, pad_inches=0.0)
     idx+=1
