@@ -16,7 +16,7 @@ mkdir build
 cd build
 cmake -DOPENXLSX_BUILD_TESTS=OFF ..
 make
-./scheduler.exe
+./scheduler
 ```
 
 ### Windows
