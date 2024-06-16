@@ -80,20 +80,20 @@ int main() {
     schedule << "schedule size: " << res.size() << std::endl;
     for (const auto& sch_atom: res) {
         auto start = sch_atom.edge_voyage.start_point, end = sch_atom.edge_voyage.end_point;
-        if (sch_atom.icebreaker_id.is_initialized()){
+        if (sch_atom.caravan.icebreaker_id.is_initialized()){
                 std::vector<int> carvs;
-                for (auto it = sch_atom.ships_id.ships_id.begin(); it != sch_atom.ships_id.ships_id.end(); ++it) {
+                for (auto it = sch_atom.caravan.ships_id.begin(); it != sch_atom.caravan.ships_id.end(); ++it) {
                     carvs.push_back(it->id);
                 }
-                res_json["icebreakers"][sch_atom.icebreaker_id->id]["path"].push_back({
+                res_json["icebreakers"][sch_atom.caravan.icebreaker_id->id]["path"].push_back({
                                                    {"caravan", carvs}, 
                                                    {"start", start},
                                                    {"end", end},
                                                    {"start_time",sch_atom.edge_voyage.start_time},
                                                    {"end_time", sch_atom.edge_voyage.end_time}});
-                schedule << "[" << std::to_string(sch_atom.icebreaker_id->id) << "] ";
+                schedule << "[" << std::to_string(sch_atom.caravan.icebreaker_id->id) << "] ";
         }
-        schedule << CaravanToString(sch_atom.ships_id) << ": " << start << " -> " << end;
+        schedule << CaravanToString(sch_atom.caravan.ships_id) << ": " << start << " -> " << end;
         schedule << " (" << sch_atom.edge_voyage.start_time << ";" << sch_atom.edge_voyage.end_time << ")";
         schedule << "\n";
     }
