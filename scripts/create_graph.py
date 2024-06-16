@@ -238,6 +238,8 @@ for edge in new_edges:
         for week in edge["type"]:
             if week == "21-Apr-2020" or week == "28-Apr-2020" or week == "05-May-2020" or week == "12-May-2020" or week == "19-May-2020" or week == "26-May-2020":
                 edge["type"][week] = 1
+            if week == "03-Mar-2020" or week == "10-Mar-2020" or week == "07-Apr-2020" or week == "14-Apr-2020":
+                edge["type"][week] = 2
 
 with open("../run/edges.json", "w") as f:
     json.dump(new_edges, f, ensure_ascii=False, indent=2)
