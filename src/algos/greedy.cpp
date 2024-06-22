@@ -24,7 +24,7 @@ float weightShipForIcebreaker(const Icebreaker &icebreaker, const Ship &ship, Pa
         cur_route.push_back(pm.ships.get()->at(ship_id.id).finish);
 
     if (!cur_route.empty()) {
-        auto [nearest, _] = pm.GetNearestVertex(ship.cur_pos, ship, cur_route);
+        auto [nearest, _] = pm.GetNearestVertex(ship.cur_pos, cur_route);
         if (pm.TimeToArriveUnderFakeProvodka(ship, icebreaker, ship.cur_pos, nearest) > 1000)
             return 0;
         double dist1 = pm.PathDistance(icebreaker.cur_pos, icebreaker, cur_route);
@@ -87,9 +87,9 @@ void checkShipPossibilities(Caravan &caravan, VertID start, VertID end,
 }
 
 std::vector<Voyage> checkPathAlone(Ship &ship, PathManager &pm) {
-    auto alone_time = pm.TimeToArriveAlone(ship, ship.cur_pos, {ship.finish});
+    auto alone_time = pm.TimeToArriveAlone(ship, ship.cur_pos, ship.finish);
     if (alone_time < 100) {
-        auto voyages = pm.GetShortestPathAlone(ship, ship.cur_pos, {ship.finish});
+        auto voyages = pm.GetShortestPathAlone(ship, ship.cur_pos, ship.finish);
         float alone2 = 0;
         for (auto &v: voyages) {
             alone2 += v.end_time - v.start_time;
@@ -338,17 +338,7 @@ Schedule algos::greedy(PathManager &manager, double *sum_res) {
                 std::vector<VertID> drops;
                 for (auto &ship_id: cur_caravan.ships_id)
                     drops.push_back(ships[ship_id.id].finish);
-                auto [next, _] = manager.GetNearestVertex(icebreaker.cur_pos, icebreaker, drops);
 
-                // checkShipPossibilities(cur_caravan, icebreaker.cur_pos, next, manager, ships_in_caravans);
-                // for (auto &ship_id: cur_caravan.ships_id) {
-                //     if (!checkShipForCaravan(ships[ship_id.id], cur_caravan, manager)) {
-                //         std::cout << "\t[" << cur_caravan.icebreaker_id->id << "] dropped" << ship_id.id << "\n";
-                //         cur_caravan.ships_id.erase(ship_id);
-                //         ships_in_caravans.erase(ship_id);
-                //         manager.ship_to_voyage[ship_id.id] = Voyage{};
-                //     }
-                // }
                 decision = manager.sail2depots(icebreaker, cur_caravan);
             }
 

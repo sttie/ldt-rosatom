@@ -69,10 +69,10 @@ int main() {
 
     json res_json;
     res_json["icebreakers"] = json::array();
-    for (int i = 0; i < (*icebreakers).size(); i++) {
+    for (size_t i = 0; i < (*icebreakers).size(); i++) {
         res_json["icebreakers"].push_back({{"id",i}, {"name", (*icebreakers)[i].name}, {"path", json::array()}});
     }
-    for(int i = 0; i < (*ships).size(); i++) {
+    for (size_t i = 0; i < (*ships).size(); i++) {
         res_json["ships"].push_back({{"id", i}, {"name", (*ships)[i].name}, {"path", json::array()}});
         res_json["ships"][i]["path"].push_back({
                                                         {"caravan",""},

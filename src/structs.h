@@ -95,9 +95,6 @@ struct ShipId {
         : id(id)
     {
     }
-    ShipId(const ShipId& other)
-        : id(other.id)
-    {}
 
     bool operator<(const ShipId& other) const {
         return id < other.id;
@@ -122,9 +119,6 @@ struct IcebreakerId {
         : id(id)
     {
     }
-    IcebreakerId(const IcebreakerId& other)
-        : id(other.id)
-    {}
 
     bool operator<(const IcebreakerId& other) const {
         return id < other.id;

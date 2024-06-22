@@ -3,6 +3,7 @@
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/exterior_property.hpp>
+#include <optional>
 
 #include "structs.h"
 
@@ -119,7 +120,7 @@ public:
     Voyage getCurrentVoyage(const Caravan &caravan);
 
     std::pair<VertID, float> GetNearestVertex(VertID source, const Icebreaker& icebreaker, const std::vector<VertID>& vertexes) const;
-    std::pair<VertID, float> GetNearestVertex(VertID source, const Ship& ship, const std::vector<VertID>& vertexes) const;
+    std::pair<VertID, float> GetNearestVertex(VertID source, const std::vector<VertID>& vertexes) const;
     float PathDistance(VertID start, const Icebreaker& icebreaker, std::vector<VertID> points) const;
 
     float TimeToArriveUnderFakeProvodka(const Ship& ship, const Icebreaker &icebreaker, VertID start, VertID end);
@@ -128,12 +129,12 @@ public:
     std::vector<Voyage> GetShortestPathAlone(const Ship& ship, VertID start, VertID end);
 
 private:
-    std::pair<VertID, float> GetNextVertexInShortestPath(VertID current, const Icebreaker& icebreaker, const Caravan& caravan, VertID end) const;
-    std::pair<int, int> GetNextVertexInShortestPathAlone(VertID current, const Ship& ship, VertID end) const;
+    std::pair<std::optional<VertID>, float> GetNextVertexInShortestPath(VertID current, const Icebreaker& icebreaker, const Caravan& caravan, VertID end) const;
+    std::pair<std::optional<VertID>, int> GetNextVertexInShortestPathAlone(VertID current, const Ship& ship, VertID end) const;
 
-    std::pair<float, int> GetMinimalSpeedInCaravan(const Caravan& caravan, int edge_ice_type) const;
+    std::pair<float, int> GetMinimalSpeedInCaravan(const Caravan& caravan) const;
     std::string GetCurrentOkayDateByTime(Days time) const;
 
-    VertID FindNewAchievablePoint(const Ship& ship, VertID from, std::unordered_set<VertID>& visited);
+    std::optional<VertID> FindNewAchievablePoint(const Ship& ship, VertID from, std::unordered_set<VertID>& visited);
     void FixFinishForWeakShips(const std::vector<int>& weak_ships, const Icebreaker& icebreaker);
 };
