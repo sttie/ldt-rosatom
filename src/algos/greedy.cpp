@@ -197,8 +197,9 @@ Schedule algos::greedy(PathManager &manager, double *sum_res) {
                 staying = (manager.getCurrentVoyage(ship_id).end_time == 0),
                 in_caravan = ships_in_caravans.count(ship_id);
             if (staying && !in_caravan)
-                for (auto &icebreaker: icebreakers)
-                    if (icebreaker.cur_pos == ships[ship_id.id].cur_pos &&
+                for (auto &icebreaker: icebreakers) {
+                    Voyage last_voyage = manager.getCurrentVoyage(icebreaker.id);
+                    if (icebreaker.cur_pos == ships[ship_id.id].cur_pos && last_voyage.start_point != icebreaker.cur_pos &&
                         caravans[icebreaker2caravan[icebreaker.id.id]].ships_id.size() < MAX_SHIPS)
                     {
                         // if (checkShipForCaravan(ships[ship_id.id], caravans[icebreaker2caravan[icebreaker.id.id]], manager)) {
@@ -212,6 +213,7 @@ Schedule algos::greedy(PathManager &manager, double *sum_res) {
                         // else
                         //     std::cout << "\t![" << icebreaker.id.id << "] not compaible with " << ship_id.id << "\n";
                     }
+                }
         }
 
         // 4. Sort icebreakers
