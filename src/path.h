@@ -129,12 +129,17 @@ public:
     std::vector<Voyage> GetShortestPathAlone(const Ship& ship, VertID start, VertID end);
 
 private:
-    std::pair<std::optional<VertID>, float> GetNextVertexInShortestPath(VertID current, const Icebreaker& icebreaker, const Caravan& caravan, VertID end) const;
-    std::pair<std::optional<VertID>, int> GetNextVertexInShortestPathAlone(VertID current, const Ship& ship, VertID end) const;
+    std::optional<VertID> GetNextVertexInShortestPath(VertID current, const Icebreaker& icebreaker, const Caravan& caravan, VertID end) const;
+    std::optional<VertID> GetNextVertexInShortestPathAlone(VertID current, const Ship& ship, VertID end) const;
 
     std::pair<float, int> GetMinimalSpeedInCaravan(const Caravan& caravan) const;
     std::string GetCurrentOkayDateByTime(Days time) const;
 
     std::optional<VertID> FindNewAchievablePoint(const Ship& ship, VertID from, std::unordered_set<VertID>& visited);
     void FixFinishForWeakShips(const std::vector<int>& weak_ships, const Icebreaker& icebreaker);
+
+    float ShipTimeToArrive(
+        size_t graph_index, const float speed,
+        VertID start, VertID end,
+        const std::function<std::optional<VertID>(VertID)>& next_vert_callback);
 };

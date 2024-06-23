@@ -88,6 +88,37 @@ void FloydWarshallThread(
 
 }
 
+float PathManager::ShipTimeToArrive(
+        size_t graph_index, const float speed,
+        VertID start, VertID end,
+        const std::function<std::optional<VertID>(VertID)>& next_vert_callback)
+{
+    VertID current_vert = start;
+    float time_to_arrive = 0;
+
+    auto old_cur_time = cur_time;
+
+    while (current_vert != end) {
+        auto next_vert = next_vert_callback(current_vert);
+
+        if (!next_vert.has_value()) {
+            return std::numeric_limits<float>::infinity();
+        }
+
+        auto okay_date = GetCurrentOkayDateByTime(cur_time);
+        const auto& graph = date_to_graph.at(okay_date).at(graph_index);
+        auto time_to_next_vert = GetEdgeWeight(graph, current_vert, next_vert.value()) / speed;
+
+        cur_time += time_to_next_vert;
+        time_to_arrive += time_to_next_vert;
+        current_vert = next_vert.value();
+    }
+
+    cur_time = old_cur_time;
+
+    return time_to_arrive;
+}
+
 // возвращает пустой вектор, если пути В ОДИНОЧКУ не существует
 std::vector<Voyage> PathManager::GetShortestPathAlone(const Ship& ship, VertID start, VertID end) {
     std::vector<Voyage> path;
@@ -100,7 +131,7 @@ std::vector<Voyage> PathManager::GetShortestPathAlone(const Ship& ship, VertID s
     while (current_vert != end) {
         auto old_cur_time = cur_time;
         cur_time = fake_time;
-        auto [next_vert, edge_ice_type] = GetNextVertexInShortestPathAlone(current_vert, ship, end);
+        auto next_vert = GetNextVertexInShortestPathAlone(current_vert, ship, end);
         cur_time = old_cur_time;
 
         if (!next_vert.has_value()) {
@@ -131,62 +162,30 @@ std::vector<Voyage> PathManager::GetShortestPathAlone(const Ship& ship, VertID s
 float PathManager::TimeToArriveUnderFakeProvodka(const Ship& ship, const Icebreaker &icebreaker, VertID start, VertID end) {
     size_t ship_index = ship_class_to_index.at(ship.ice_class);
 
-    VertID current_vert = start;
-    float time = 0;
-
-    auto old_cur_time = cur_time;
     Caravan fake_caravan;
     fake_caravan.icebreaker_id = icebreaker.id;
     fake_caravan.ships_id.insert(ship.id);
 
-    while (current_vert != end) {
-        auto [next_vert, metric] = GetNextVertexInShortestPath(current_vert, icebreaker, fake_caravan, end);
-
-        if (!next_vert.has_value() || metric >= 1000.0f) {
-            return std::numeric_limits<float>::infinity();
+    return ShipTimeToArrive(
+        ship_index, ship.speed,
+        start, end,
+        [this, &icebreaker, &fake_caravan, end](VertID from) {
+            return GetNextVertexInShortestPath(from, icebreaker, fake_caravan, end);
         }
-
-        auto okay_date = GetCurrentOkayDateByTime(cur_time);
-        const auto& graph = date_to_graph.at(okay_date).at(ship_index);
-        auto inc_time = (GetEdgeWeight(graph, current_vert, next_vert.value()) / ship.speed);
-
-        cur_time += inc_time;
-        time += inc_time;
-        current_vert = next_vert.value();
-    }
-
-    cur_time = old_cur_time;
-
-    return time;
+    );
 }
 
 // время в пути корабля в одиночку
 float PathManager::TimeToArriveAlone(const Ship& ship, VertID start, VertID end) {
     size_t ship_index = alone_ship_class_to_index.at(ship.ice_class);
-
-    VertID current_vert = start;
-    float time = 0;
-
-    auto old_cur_time = cur_time;
-    while (current_vert != end) {
-        auto [next_vert, edge_ice_type] = GetNextVertexInShortestPathAlone(current_vert, ship, end);
-
-        if (!next_vert.has_value()) {
-            return std::numeric_limits<float>::infinity();
+    
+    return ShipTimeToArrive(
+        ship_index, ship.speed,
+        start, end,
+        [this, &ship, end](VertID from) {
+            return GetNextVertexInShortestPathAlone(from, ship, end);
         }
-
-        auto okay_date = GetCurrentOkayDateByTime(cur_time);
-        const auto& graph = date_to_graph.at(okay_date).at(ship_index);
-        auto inc_time = (GetEdgeWeight(graph, current_vert, next_vert.value()) / ship.speed);
-
-        cur_time += inc_time;
-        time += inc_time;
-        current_vert = next_vert.value();
-    }
-
-    cur_time = old_cur_time;
-
-    return time;
+    );
 }
 
 PathManager::PathManager(DatesToIceGraph date_to_graph_, std::shared_ptr<Icebreakers> icebreakers, std::shared_ptr<Ships> ships)
@@ -210,7 +209,7 @@ PathManager::PathManager(DatesToIceGraph date_to_graph_, std::shared_ptr<Icebrea
 
 // build path to point, return next step
 Voyage PathManager::sail2point(const Icebreaker &icebreaker, const Caravan &caravan, VertID point) {
-    auto [next_vertex, _] = GetNextVertexInShortestPath(icebreaker.cur_pos, icebreaker, caravan, point);
+    auto next_vertex = GetNextVertexInShortestPath(icebreaker.cur_pos, icebreaker, caravan, point);
 
     size_t icebreaker_graph_index = GetIcebreakerIndexByName(icebreaker.name);
 
@@ -372,9 +371,9 @@ Voyage PathManager::getCurrentVoyage(const Caravan &caravan) {
     return {};
 }
 
-std::pair<std::optional<VertID>, float> PathManager::GetNextVertexInShortestPath(VertID current,
+std::optional<VertID> PathManager::GetNextVertexInShortestPath(VertID current,
         const Icebreaker& icebreaker, const Caravan& caravan, VertID end) const {
-    std::optional<VertID> optimal_neighbour = std::nullopt;;
+    std::optional<VertID> optimal_neighbour = std::nullopt;
     float optimal_metric = std::numeric_limits<float>::infinity();
     bool found = false;
 
@@ -417,14 +416,13 @@ std::pair<std::optional<VertID>, float> PathManager::GetNextVertexInShortestPath
         }
     }
 
-    if (!found) {
-       return std::make_pair(std::nullopt, -1);
+    if (!found || optimal_metric >= 1000.0f) {
+       return std::nullopt;
     }
-
-    return std::make_pair(optimal_neighbour, optimal_metric);
+    return optimal_neighbour;
 }
 
-std::pair<std::optional<VertID>, int> PathManager::GetNextVertexInShortestPathAlone(VertID current, const Ship& ship, VertID end) const {
+std::optional<VertID> PathManager::GetNextVertexInShortestPathAlone(VertID current, const Ship& ship, VertID end) const {
     std::optional<VertID> optimal_neighbour = std::nullopt;
     float optimal_metric = 10000.0f;
     bool found = false;
@@ -446,12 +444,11 @@ std::pair<std::optional<VertID>, int> PathManager::GetNextVertexInShortestPathAl
         }
     }
 
-    if (!found) {
-        return std::make_pair(std::nullopt, -1);
+    if (!found || optimal_metric >= 1000.0f) {
+        return std::nullopt;
     }
 
-    auto [edge, _] = boost::edge(current, optimal_neighbour.value(), graph);
-    return std::make_pair(optimal_neighbour, graph[edge].ice_type);
+    return optimal_neighbour;
 }
 
 std::pair<float, int> PathManager::GetMinimalSpeedInCaravan(const Caravan& caravan) const {
