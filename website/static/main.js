@@ -14,11 +14,91 @@ $(function() {
   var lat_start = 20;
   var long_start = 55;
 
-  if (canvas.getContext) {
-    ctx = canvas.getContext('2d');
-    var cell_width = canvas.width / lon_width;
-    var cell_height = canvas.height / lat_width;
-  };
+  var canvas_width = 2033.33;
+  var canvas_height = 990.66;
+
+  var stage = new Konva.Stage({
+    container : 'container',
+    width : canvas_width,
+    height: canvas_height,
+    draggable : true
+  });
+
+
+  var scaleBy = 1.1;
+  stage.on('wheel', (e) => {
+    // stop default scrolling
+    e.evt.preventDefault();
+
+    var oldScale = stage.scaleX();
+    var pointer = stage.getPointerPosition();
+
+    var mousePointTo = {
+      x: (pointer.x - stage.x()) / oldScale,
+      y: (pointer.y - stage.y()) / oldScale,
+    };
+
+    // how to scale? Zoom in? Or zoom out?
+    let direction = e.evt.deltaY > 0 ? -1 : 1;
+
+    // when we zoom on trackpad, e.evt.ctrlKey is true
+    // in that case lets revert direction
+    if (e.evt.ctrlKey) {
+      direction = -direction;
+    }
+
+    var newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
+
+    stage.scale({ x: newScale, y: newScale });
+
+    var newPos = {
+      x: pointer.x - mousePointTo.x * newScale,
+      y: pointer.y - mousePointTo.y * newScale,
+    };
+    stage.position(newPos);
+  });
+
+  var backgroundLayer = new Konva.Layer();
+  stage.add(backgroundLayer);
+  var background = new Konva.Rect({
+    x: 0,
+    y: 0,
+    width : 9150,
+    height : 4458,
+    scaleX : 0.22222,
+    scaleY : 0.22222
+  });
+
+
+var backgrounds = [];
+
+for(let i = 0; i < 14; i++){
+  backgrounds.push(new Image());
+  backgrounds[i].src = 'static/main_' + i.toString() + '.png';
+}
+
+backgrounds[0].onload = function () {
+  background.fillPatternImage(backgrounds[0]);
+}
+backgroundLayer.add(background);
+
+
+// // set fill pattern image
+// var imageObj = new Image();
+// imageObj.onload = function() {
+//   background.fillPatternImage(imageObj);
+//   backgroundLayer.add(background);
+// };
+// imageObj.src = 'static/main_0.png';
+
+
+  var layer = new Konva.Layer();
+  stage.add(layer);
+
+
+  var cell_width = canvas_width / lon_width;
+  var cell_height = canvas_height / lat_width;
+
 
   document.getElementById('import').onclick = function() {
     var files = document.getElementById('selectFiles').files;
@@ -258,7 +338,6 @@ $(function() {
       step: 1440
     }, function(){
       $("#slider").css("display","block");
-      
     });
 
     var cur_week_id = 0;
@@ -269,19 +348,18 @@ $(function() {
       let det = new Date(val);
       det = addHours(det, 3);
       node.textContent = det.toISOString();
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      layer.removeChildren();
       if(det < weeks[cur_week_id] || (cur_week_id != weeks.length - 1 && det >= weeks[cur_week_id + 1])) {
         for(let i = 0; i < weeks.length; i++){
           if(weeks[i]<= det){
             cur_week_id = i;
-            document.getElementById('myCanvas').style.backgroundImage="url(static/main_" + i.toString() + ".png)";
+            background.fillPatternImage(backgrounds[i]);
           }
         }
       }
 
 
       gantt.set_scroll_position(det);
-      ctx.font = "12px serif";
       for(let i = 0; i < result["icebreakers"].length; i++){
 
         if(val < result["icebreakers"][i]["path"][0]["start_time"] || val > result["icebreakers"][i]["path"][result["icebreakers"][i]["path"].length - 1]["end_time"]){
@@ -304,11 +382,17 @@ $(function() {
             const x = ports[result["icebreakers"][i]["path"][j]["start"]]["lon"] + 
                       (ports[result["icebreakers"][i]["path"][j]["end"]]["lon"] - 
                       ports[result["icebreakers"][i]["path"][j]["start"]]["lon"]) * vel * (val - start_time) / path_length;
-
-            ctx.fillStyle = colorDictCanvas[(result["icebreakers"][i]["id"] % 10).toString()];
-            ctx.fillRect((x - lat_start) * cell_width - cell_width / 2, (canvas.height) - (y - long_start) * cell_height - cell_width / 2, cell_width , cell_width);
-            ctx.fillStyle = "black";
-            ctx.fillText("{" + result["icebreakers"][i]["path"][j]["caravan"].toString() + "}", (x - lat_start) * cell_width - cell_width / 2, (canvas.height) - (y - long_start) * cell_height - cell_width / 2 - cell_height / 3);
+ 
+            layer.add(new Konva.Rect({x : (x - lat_start) * cell_width - cell_width / 2, y : (canvas_height) - (y - long_start) * cell_height - cell_width / 2, width: cell_width, height : cell_width, fill : colorDictCanvas[(result["icebreakers"][i]["id"] % 10).toString()]}));           
+            
+            layer.add(new Konva.Text({
+              x: (x - lat_start) * cell_width - cell_width / 2,
+              y: (canvas_height) - (y - long_start) * cell_height - cell_width / 2 - cell_height / 3,
+              text: "{" + result["icebreakers"][i]["path"][j]["caravan"].toString() + "}",
+              fontSize: 14,
+              fontFamily: 'Sans Serif',
+              fill: 'black',
+            }));
             break;
           }
           
@@ -318,11 +402,17 @@ $(function() {
             if(val > time_left && val < time_right){
               const y = ports[result["icebreakers"][i]["path"][j]["end"]]["lat"];
               const x = ports[result["icebreakers"][i]["path"][j]["end"]]["lon"];
+              layer.add(new Konva.Rect({x : (x - lat_start) * cell_width - cell_width / 2, y : (canvas_height) - (y - long_start) * cell_height - cell_width / 2, width: cell_width, height : cell_width, fill : colorDictCanvas[(result["icebreakers"][i]["id"] % 10).toString()]}));
+              
+              layer.add(new Konva.Text({
+                x: (x - lat_start) * cell_width - cell_width / 2,
+                y: (canvas_height) - (y - long_start) * cell_height - cell_width / 2 - cell_height / 3,
+                text: "{" + result["icebreakers"][i]["path"][j]["caravan"].toString() + "}",
+                fontSize: 14,
+                fontFamily: 'Sans Serif',
+                fill: 'black',
+              }));
 
-              ctx.fillStyle = colorDictCanvas[(result["icebreakers"][i]["id"] % 10).toString()];
-              ctx.fillRect((x - lat_start) * cell_width - cell_width / 2, (canvas.height) - (y - long_start) * cell_height - cell_width / 2, cell_width , cell_width);
-              ctx.fillStyle = "black";
-              ctx.fillText("{" + result["icebreakers"][i]["path"][j+1]["caravan"].toString() + "}", (x - lat_start) * cell_width - cell_width / 2, (canvas.height) - (y - long_start) * cell_height - cell_width / 2 - cell_height / 3);
               break;
             }
           }
@@ -348,11 +438,24 @@ $(function() {
             const x = ports[ships_schedule[i][j]["start"]]["lon"] + 
                       (ports[ships_schedule[i][j]["end"]]["lon"] - 
                       ports[ships_schedule[i][j]["start"]]["lon"]) * vel * (val - start_time) / path_length;
-            
-            ctx.fillStyle = "#6779ca";
-            ctx.fillRect((x - lat_start) * cell_width - cell_width / 2, (canvas.height) - (y - long_start) * cell_height - cell_width / 2, cell_width , cell_width);
-            ctx.fillStyle = "white";
-            ctx.fillText(i.toString(), (x - lat_start) * cell_width - cell_width / 2, (canvas.height) - (y - long_start) * cell_height - cell_width / 2 + cell_height / 3);
+          
+
+
+            layer.add(new Konva.RegularPolygon({x : (x - lat_start) * cell_width, y : (canvas_height) - (y - long_start) * cell_height , radius : cell_width, fill : "#6779ca", sides : 3}));
+              
+            layer.add(new Konva.Text({
+              x: (x - lat_start) * cell_width - cell_width / 2,
+              y: (canvas_height) - (y - long_start) * cell_height - 1.5*cell_width  + cell_height / 3,
+              text: i.toString(),
+              fontSize: 14,
+              fontFamily: 'Sans Serif',
+              fill: 'white',
+            }));
+
+            // ctx.fillStyle = "#6779ca";
+            // ctx.fillRect((x - lat_start) * cell_width - cell_width / 2, (canvas.height) - (y - long_start) * cell_height - cell_width / 2, cell_width , cell_width);
+            // ctx.fillStyle = "white";
+            // ctx.fillText(i.toString(), (x - lat_start) * cell_width - cell_width / 2, (canvas.height) - (y - long_start) * cell_height - cell_width / 2 + cell_height / 3);
             break;
           }
 
@@ -362,11 +465,19 @@ $(function() {
             if(val > time_left && val < time_right){
               const y = ports[ships_schedule[i][j]["end"]]["lat"];
               const x = ports[ships_schedule[i][j]["end"]]["lon"];
-
-              ctx.fillStyle = "#6779ca";
-              ctx.fillRect((x - lat_start) * cell_width - cell_width / 2, (canvas.height) - (y - long_start) * cell_height - cell_width / 2, cell_width , cell_width);
-              ctx.fillStyle = "white";
-              ctx.fillText(i.toString(), (x - lat_start) * cell_width - cell_width / 2, (canvas.height) - (y - long_start) * cell_height - cell_width / 2 + cell_height / 3);
+              layer.add(new Konva.RegularPolygon({x : (x - lat_start) * cell_width , y : (canvas_height) - (y - long_start) * cell_height , radius :  cell_width, fill : "#6779ca", sides : 3}));
+              layer.add(new Konva.Text({
+                x: (x - lat_start) * cell_width - cell_width / 2,
+                y: (canvas_height) - (y - long_start) * cell_height - 1.5*cell_width  + cell_height / 3,
+                text: i.toString(),
+                fontSize: 14,
+                fontFamily: 'Sans Serif',
+                fill: 'white',
+              }));
+              // ctx.fillStyle = "#6779ca";
+              // ctx.fillRect((x - lat_start) * cell_width - cell_width / 2, (canvas.height) - (y - long_start) * cell_height - cell_width / 2, cell_width , cell_width);
+              // ctx.fillStyle = "white";
+              // ctx.fillText(i.toString(), (x - lat_start) * cell_width - cell_width / 2, (canvas.height) - (y - long_start) * cell_height - cell_width / 2 + cell_height / 3);
               break;
             }
           }
