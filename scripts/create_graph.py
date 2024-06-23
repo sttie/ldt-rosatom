@@ -247,35 +247,35 @@ with open("../run/edges.json", "w") as f:
 with open("../run/vertices.json", "w") as f:
     json.dump(all_vertices, f, ensure_ascii=False, indent=2)
 
-shp = geopandas.read_file("../dataset/goas/goas_v01.shp").set_crs("EPSG:4326")
-shp_right = shp.clip_by_rect(20, 55, 180, 85)
-shp_left = shp.clip_by_rect(-180, 55, -160, 85)
-shp_left_trans = shp_left.translate(360, 0, 0)
-joined = pd.concat([shp_right, shp_left_trans])
+# shp = geopandas.read_file("../dataset/goas/goas_v01.shp").set_crs("EPSG:4326")
+# shp_right = shp.clip_by_rect(20, 55, 180, 85)
+# shp_left = shp.clip_by_rect(-180, 55, -160, 85)
+# shp_left_trans = shp_left.translate(360, 0, 0)
+# joined = pd.concat([shp_right, shp_left_trans])
 
-idx = 0
-for week in excel_reader.sheet_names[2:]:
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    t = joined.plot(ax=ax)
-    t.set_axis_off()
-    plt.tight_layout()
-    plt.margins(x=0,y=0)
-    print("plotting for week: ", week)
+# idx = 0
+# for week in excel_reader.sheet_names[2:]:
+#     fig = plt.figure()
+#     ax = fig.add_subplot(111)
+#     t = joined.plot(ax=ax)
+#     t.set_axis_off()
+#     plt.tight_layout()
+#     plt.margins(x=0,y=0)
+#     print("plotting for week: ", week)
 
-    edge_id = 0
-    for edge in new_edges:
-        color= 'green' if edge["type"][week] == 0 else ('blue' if edge["type"][week] == 1 else ("yellow" if edge["type"][week] == 2 else "red"))
-        plt.plot([all_vertices[edge["start"]]["lon"], all_vertices[edge["end"]]["lon"]], [all_vertices[edge["start"]]["lat"], all_vertices[edge["end"]]["lat"]], color=color, linewidth=0.3)
-        plt.annotate(edge_id, ((all_vertices[edge["start"]]["lon"] + all_vertices[edge["end"]]["lon"]) / 2, (all_vertices[edge["start"]]["lat"] + all_vertices[edge["end"]]["lat"]) / 2), fontsize=1)
-        edge_id+=1
+#     edge_id = 0
+#     for edge in new_edges:
+#         color= 'green' if edge["type"][week] == 0 else ('blue' if edge["type"][week] == 1 else ("yellow" if edge["type"][week] == 2 else "red"))
+#         plt.plot([all_vertices[edge["start"]]["lon"], all_vertices[edge["end"]]["lon"]], [all_vertices[edge["start"]]["lat"], all_vertices[edge["end"]]["lat"]], color=color, linewidth=0.3)
+#         plt.annotate(edge_id, ((all_vertices[edge["start"]]["lon"] + all_vertices[edge["end"]]["lon"]) / 2, (all_vertices[edge["start"]]["lat"] + all_vertices[edge["end"]]["lat"]) / 2), fontsize=1)
+#         edge_id+=1
     
 
-    for port in all_vertices:
-        plt.scatter(port["lon"], port["lat"], s=1, marker='.', color='orange' if port["name"] == "" else 'purple', zorder=100)
-        plt.annotate(port["name"], (port["lon"], port["lat"]), fontsize=1, zorder=101)
+#     for port in all_vertices:
+#         plt.scatter(port["lon"], port["lat"], s=1, marker='.', color='orange' if port["name"] == "" else 'purple', zorder=100)
+#         plt.annotate(port["name"], (port["lon"], port["lat"]), fontsize=1, zorder=101)
     
     
 
-    plt.savefig('../run/main_' + str(idx) + '.png', bbox_inches='tight', dpi=1500, pad_inches=0.0)
-    idx+=1
+#     plt.savefig('../run/main_' + str(idx) + '.png', bbox_inches='tight', dpi=1500, pad_inches=0.0)
+#     idx+=1

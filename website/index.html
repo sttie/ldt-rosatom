@@ -17,48 +17,40 @@
 <body>
 
     <div id="main">
-        <div id="container" width="2033.33" height="990.66" style="border:1px solid #000000;">
+        <div id="container" style="border:1px solid #000000;">
         </div>
-    </div>
-    
-    <div id="options">
-        <div id="inp">
-            Вставьте schedule.json <br/>
-            <input type="file" id="selectFiles" accept="application/json" value="Import" />
-            <button id="import">Import</button>
+        <div id="legend" style="border:1px solid #000000;">
         </div>
-        <div id="explain">
-            <p>
-            Данная страничка предназначена для демонстрации результатов работы программы. 
-            Веб-сервис планируется позже.<br />
-            Обозначения на рисунке: 1) Фиолетовые круги -- порты, оранжевые -- промежуточные вершины; <br />
-            2) Цвет ребра (от самого легкого до тяжелого льда): зеленый < синий < желтый < красный. <br />
-            3) Ледоколы -- цветные квадраты, сверху в {} текущее состояние каравана. Остальные корабли -- голубые квадраты со своим номером внутри. <br />
-            В диаграмме ганта часто информация не влезает на отрезок, поэтому можно нажимать на отрезок и смотреть информацию в всплывающем окне.<br />
-            Первые строчки в диаграмме -- ледоколы, в {} у которых конвой, vel -- скорость в узлах, e_id -- индекс ребра. Дальше идут остальные корабли.
-        </p>
-        </div>
-    </div>
-
-    <div id="mainslider">
-        <div id="res"></div>
-        <div id="dateText"></div>
-            <div id="slider" data-slider-id='mainSlider' type="text" style="display:None">
-    
+        <div id="options">
+            <div id="inp">
+                Вставьте schedule.json <br/>
+                <input type="file" id="selectFiles" accept="application/json" value="Import" />
+                <button id="import">Import</button>
             </div>
-            <div id="g">
-                <div id="t">
-                    <table >
-
-                    </table>
+        </div>
+    </div>
+    <div id="results">
+        <div id="mainslider">
+            <div id="res"></div>
+            <div id="dateText"></div>
+                <div id="slider" data-slider-id='mainSlider' type="text" style="display:None">
+        
                 </div>
-                <div id="gan">
-                    <svg id="gantt" class="dark"></svg>
+                <div id="g">
+                    <div id="t">
+                        <table >
+    
+                        </table>
+                    </div>
+                    <div id="gan">
+                        <svg id="gantt" class="dark"></svg>
+                    </div>
+                    
                 </div>
                 
-            </div>
-            
+        </div>
     </div>
+    
 
 
     <script src="static/main.js"></script>
