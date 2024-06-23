@@ -98,6 +98,15 @@ inline auto GetEdgeLen(
     return graph[edge].len;
 }
 
+struct PDPPoint {
+    VertID vertex;
+    std::optional<ShipId> ship_id;
+
+    bool operator<(const PDPPoint& other) const {
+        return vertex < other.vertex;
+    }
+};
+
 class PathManager {
 private:
     DatesToIceGraph date_to_graph;
@@ -128,12 +137,30 @@ public:
 
     std::vector<Voyage> GetShortestPathAlone(const Ship& ship, VertID start, VertID end);
 
+    std::pair<float, std::vector<PDPPoint>> TimeToSail(const Caravan& caravan);
+    Schedule SailPath(const Icebreaker& icebreaker, const std::vector<PDPPoint>& points);
+
+    std::string GetCurrentOkayDateByTime(Days time) const;
+
+    bool HasEdge(const Ship& ship, bool alone, Days time, VertID from, VertID to) const {
+        size_t graph_index;
+        if (alone) {
+            graph_index = alone_ship_class_to_index.at(ship.ice_class);
+        } else {
+            graph_index = ship_class_to_index.at(ship.ice_class);
+        }
+
+        auto okay_date = GetCurrentOkayDateByTime(time);
+        const auto& graph = date_to_graph.at(okay_date).at(graph_index);
+        return boost::edge(from, to, graph).second;
+    }
+
 private:
     std::optional<VertID> GetNextVertexInShortestPath(VertID current, const Icebreaker& icebreaker, const Caravan& caravan, VertID end) const;
     std::optional<VertID> GetNextVertexInShortestPathAlone(VertID current, const Ship& ship, VertID end) const;
 
     const Ship* GetMinimalSpeedShipInCaravan(const Caravan& caravan) const;
-    std::string GetCurrentOkayDateByTime(Days time) const;
+    // std::string GetCurrentOkayDateByTime(Days time) const;
 
     std::optional<VertID> FindNewAchievablePoint(const Ship& ship, VertID from, std::unordered_set<VertID>& visited);
     void FixFinishForWeakShips(const std::vector<int>& weak_ships, const Icebreaker& icebreaker);
@@ -142,4 +169,6 @@ private:
         size_t graph_index, const float speed,
         VertID start, VertID end,
         const std::function<std::optional<VertID>(VertID)>& next_vert_callback);
+
+    std::vector<Voyage> GetShortestPathForCaravan(const Caravan& caravan, VertID start, VertID end);
 };

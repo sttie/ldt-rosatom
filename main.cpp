@@ -10,19 +10,10 @@
 #include <boost/graph/graphviz.hpp>
 #include <boost/graph/properties.hpp>
 #include <json.hpp>
-using json = nlohmann::json;
 
-// void GenerateGraph(Graph& graph) {
-    // boost::add_edge(5, 1, 116.74, graph);
-    // boost::add_edge(0, 2, 260.18, graph);
-    // boost::add_edge(0, 5, 157.6, graph);
-    // boost::add_edge(0, 4, 192.45, graph);
-    // boost::add_edge(2, 3, 409.31, graph);
-    // boost::add_edge(4, 1, 200.31, graph);
-    // boost::add_edge(0, 1, 600.31, graph);
-    // boost::add_edge(5, 6, 191.31, graph);
-    // boost::add_edge(2, 6, 50.31, graph);
-// }
+#include "tests/validate.h"
+
+using json = nlohmann::json;
 
 int main() {
     #ifdef _WIN32
@@ -66,6 +57,9 @@ int main() {
 
     /** Дополнительная подготовка данных **/
 
+    // для валидации
+    auto ships_copy = *ships;
+
 
     json res_json;
     res_json["icebreakers"] = json::array();
@@ -90,6 +84,9 @@ int main() {
     double sum;
 
     Schedule res = algos::greedy(pm, &sum);
+
+    Validate(std::make_shared<std::vector<Ship>>(ships_copy), res, pm);
+    std::cout << "validation is okay!" << std::endl;
 
 
     std::ofstream schedule("schedule.txt");
