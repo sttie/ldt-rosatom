@@ -132,7 +132,7 @@ private:
     std::optional<VertID> GetNextVertexInShortestPath(VertID current, const Icebreaker& icebreaker, const Caravan& caravan, VertID end) const;
     std::optional<VertID> GetNextVertexInShortestPathAlone(VertID current, const Ship& ship, VertID end) const;
 
-    std::pair<float, int> GetMinimalSpeedInCaravan(const Caravan& caravan) const;
+    const Ship* GetMinimalSpeedShipInCaravan(const Caravan& caravan) const;
     std::string GetCurrentOkayDateByTime(Days time) const;
 
     std::optional<VertID> FindNewAchievablePoint(const Ship& ship, VertID from, std::unordered_set<VertID>& visited);
