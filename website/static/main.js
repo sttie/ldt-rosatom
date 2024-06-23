@@ -2,9 +2,6 @@
 $(function() {
   const canvas = document.getElementById("myCanvas");
 
-  var ctx;
-  
-
   var lat_width = 30;
   var lon_width = 180;
 
@@ -17,13 +14,190 @@ $(function() {
   var canvas_width = 2033.33;
   var canvas_height = 990.66;
 
+
+  var cell_width = canvas_width / lon_width;
+  var cell_height = canvas_height / lat_width;
+
+  var stageLegend = new Konva.Stage({
+    container : 'legend', 
+    width : 1200,
+    height : 100,
+    draggable : false
+  });
+  var layerLegend = new Konva.Layer();
+  stageLegend.add(layerLegend);
+
+
+  // port label
+  layerLegend.add(new Konva.Circle({
+    x : 20,
+    y : 30,
+    radius : 15,
+    fill : 'purple',
+  }));
+
+  layerLegend.add(new Konva.Text({
+    x : 40,
+    y : 20,
+    text : "- Порт",
+    fill : 'black',
+    fontSize : 24,
+    fontFamily : 'Sans Serif'
+  }));
+
+  // vertex label
+  layerLegend.add(new Konva.Circle({
+    x : 20,
+    y : 70,
+    radius : 15,
+    fill : 'orange',
+  }));
+
+  layerLegend.add(new Konva.Text({
+    x : 40,
+    y : 60,
+    text : "- Промежуточная вершина",
+    fill : 'black',
+    fontSize : 24,
+    fontFamily : 'Sans Serif'
+  }));
+
+
+  // # 0 if ice >= 20
+  //   # 1 if ice \in [15, 20)
+  //   # 2 if ice \in [10, 15)
+  //   # 3 if ice < 10 
+
+  // green line >= 20
+  layerLegend.add(new Konva.Line({
+    points : [350, 10, 390, 10],
+    stroke : 'green',
+    strokeWidth : 4,
+    lineCap : 'round'
+  }));
+
+  layerLegend.add(new Konva.Text({
+    x : 400,
+    y : 0,
+    text : "- Ребро с проходимостью >= 20",
+    fill : 'black',
+    fontSize : 24,
+    fontFamily : 'Sans Serif'
+  }));
+
+    // blue line [15, 20)
+    layerLegend.add(new Konva.Line({
+      points : [350, 35, 390, 35],
+      stroke : 'blue',
+      strokeWidth : 4,
+      lineCap : 'round'
+    }));
+  
+    layerLegend.add(new Konva.Text({
+      x : 400,
+      y : 25,
+      text : "- Ребро с проходимостью [15, 20)",
+      fill : 'black',
+      fontSize : 24,
+      fontFamily : 'Sans Serif'
+    }));
+
+    // yellow line [10, 15)
+    layerLegend.add(new Konva.Line({
+      points : [350, 60, 390, 60],
+      stroke : 'yellow',
+      strokeWidth : 4,
+      lineCap : 'round'
+    }));
+  
+    layerLegend.add(new Konva.Text({
+      x : 400,
+      y : 50,
+      text : "- Ребро с проходимостью [10, 15)",
+      fill : 'black',
+      fontSize : 24,
+      fontFamily : 'Sans Serif'
+    }));
+
+    // red line < 10
+    layerLegend.add(new Konva.Line({
+      points : [350, 85, 390, 85],
+      stroke : 'red',
+      strokeWidth : 4,
+      lineCap : 'round'
+    }));
+  
+    layerLegend.add(new Konva.Text({
+      x : 400,
+      y : 75,
+      text : "- Ребро с проходимостью < 10",
+      fill : 'black',
+      fontSize : 24,
+      fontFamily : 'Sans Serif'
+    }));
+
+    // icebreaker label
+    layerLegend.add(new Konva.Rect({
+      x : 800,
+      y : 10,
+      width: cell_width*2, 
+      height : cell_width*2,
+      fill : 'blue'
+    }));
+
+    layerLegend.add(new Konva.Text({
+      x : 830,
+      y : 10,
+      text : "- Ледокол",
+      fill : 'black',
+      fontSize : 24,
+      fontFamily : 'Sans Serif'
+    }));
+
+    // caravan
+    layerLegend.add(new Konva.Text({
+      x : 800,
+      y : 40,
+      text : "{i,j,k} - Караван из i,j,k кораблей",
+      fill : 'black',
+      fontSize : 24,
+      fontFamily : 'Sans Serif'
+    }));
+
+    // ship
+
+    layerLegend.add(new Konva.RegularPolygon({
+      x : 810,
+      y : 85,
+      radius : cell_width * 1.5,
+      fill : "#6779ca",
+      sides : 3
+    }));
+
+    layerLegend.add(new Konva.Text({
+      x : 807,
+      y : 73,
+      text : "i",
+      fontSize: 24,
+      fontFamily: 'Sans Serif',
+      fill: 'white',
+    }));
+
+    layerLegend.add(new Konva.Text({
+      x : 840,
+      y : 70,
+      text : " - Корабль под номером i",
+      fill : 'black',
+      fontSize : 24,
+      fontFamily : 'Sans Serif'
+    }));
+
   var stage = new Konva.Stage({
     container : 'container',
     width : canvas_width,
     height: canvas_height,
     draggable : true
   });
-
 
   var scaleBy = 1.1;
   stage.on('wheel', (e) => {
@@ -70,34 +244,18 @@ $(function() {
   });
 
 
-var backgrounds = [];
+  var backgroundImg = new Image();
+  backgroundImg.src = 'static/main.png';
 
-for(let i = 0; i < 14; i++){
-  backgrounds.push(new Image());
-  backgrounds[i].src = 'static/main_' + i.toString() + '.png';
-}
-
-backgrounds[0].onload = function () {
-  background.fillPatternImage(backgrounds[0]);
-}
-backgroundLayer.add(background);
-
-
-// // set fill pattern image
-// var imageObj = new Image();
-// imageObj.onload = function() {
-//   background.fillPatternImage(imageObj);
-//   backgroundLayer.add(background);
-// };
-// imageObj.src = 'static/main_0.png';
-
+  backgroundImg.onload = function () {
+    background.fillPatternImage(backgroundImg);
+    backgroundLayer.add(background);
+  }
 
   var layer = new Konva.Layer();
   stage.add(layer);
 
 
-  var cell_width = canvas_width / lon_width;
-  var cell_height = canvas_height / lat_width;
 
 
   document.getElementById('import').onclick = function() {
@@ -138,31 +296,104 @@ backgroundLayer.add(background);
     return date;
   }
 
+  // read json
   fr.onload = function(e) { 
   var tasks = [];
     var result = JSON.parse(e.target.result);
-
     var edges = result["edges"];
     var ports = result["vertices"];
-    var sumres = result["sum"];
-    var divres = document.getElementById('res');
-    divres.innerHTML = "Результат: " + sumres.toString() + " суток общее время работы ";
-    
-    const ticks = new Set();
-    var ships = new Set();
-
-    for (let i = 0; i < edges.length; i++){
-      edges[i]["len"] = edges[i]["len"] / 1852.0;
-    }
-    
     var weeks = Object.keys(edges[0]["type"]);
 
+    // date from string to Date() with -2 hours because of bug in the dataset
     for (let i = 0; i < weeks.length; i++){
       weeks[i] = weeks[i].slice(0, -1) + '2';
       weeks[i] = new Date(weeks[i]);
     }
 
-    weeks.sort();
+
+
+    weeks.sort(function(a,b){
+      return a - b;
+    });
+
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    // get start datetime
+
+    var start_datetime = weeks[0].getDate().toString().padStart(2, '0') + "-" + months[weeks[0].getMonth()] + "-" + (weeks[0].getFullYear() - 2).toString();
+
+    // create array for storing canvas edges
+    var konvaLines = Array(edges.length);
+
+    // plot edges
+    for (let i = 0; i < edges.length; i++){
+      edges[i]["len"] = edges[i]["len"] / 1852.0;
+      let y1 = ports[edges[i]["start"]]["lat"];
+      let x1 = ports[edges[i]["start"]]["lon"];
+      let y2 = ports[edges[i]["end"]]["lat"];
+      let x2 = ports[edges[i]["end"]]["lon"];
+      konvaLines[i] = new Konva.Line({
+        points: [(x1 - lat_start) * cell_width - cell_width / 2, (canvas_height) - (y1 - long_start) * cell_height - cell_width / 2,
+                 (x2 - lat_start) * cell_width - cell_width / 2, (canvas_height) - (y2 - long_start) * cell_height - cell_width / 2],
+        stroke: (edges[i]["type"][start_datetime] == 0 ? 'green' : (edges[i]["type"][start_datetime] == 1 ? 'blue' : (edges[i]["type"][start_datetime] == 2 ? 'yellow' : 'red'))),
+        strokeWidth: 2,
+        lineCap: 'round',
+      });
+      layer.add(konvaLines[i]);
+    }
+
+    for(let i = 0; i < edges.length; i++){
+      let y1 = ports[edges[i]["start"]]["lat"];
+      let x1 = ports[edges[i]["start"]]["lon"];
+      let y2 = ports[edges[i]["end"]]["lat"];
+      let x2 = ports[edges[i]["end"]]["lon"];
+      let middle_x = x1 + (x2 - x1) / 2;
+      let middle_y = y1 + (y2 - y1) / 2;
+
+      layer.add(new Konva.Text({
+        x: (middle_x - lat_start) * cell_width - cell_width,
+        y: (canvas_height) - (middle_y - long_start) * cell_height - cell_width,
+        text: i.toString(),
+        fontSize: 5,
+        fontFamily: 'Sans Serif',
+        fill: 'black',
+      }));
+    }
+
+    // plot vertices
+
+    for (let i = 0; i < ports.length; i++) {
+      let x = ports[i]["lon"];
+      let y = ports[i]["lat"];
+      layer.add(new Konva.Circle({
+        x: (x - lat_start) * cell_width - cell_width / 2,
+        y: (canvas_height) - (y - long_start) * cell_height - cell_width / 2,
+        radius: 5,
+        fill: ports[i]['name'] == '' ? 'orange' : 'purple',
+      }));
+    }
+
+    for(let i = 0; i < ports.length; i++) {
+      let x = ports[i]["lon"];
+      let y = ports[i]["lat"];
+      if(ports[i]["name"] != "")
+        layer.add(new Konva.Text({
+          x: (x - lat_start) * cell_width ,
+          y: (canvas_height) - (y - long_start) * cell_height - cell_width,
+          text: ports[i]["name"],
+          fontSize: 8,
+          fontFamily: 'Sans Serif',
+          fill: 'black',
+          fontStyle : 'bold'
+        }));
+    }
+
+
+    var sumres = result["sum"];
+    var divres = document.getElementById('res');
+    divres.innerHTML = "Результат: " + sumres.toString() + " суток общее время работы ";
+    
+    const ticks = new Set();
 
     // icebreakers
     for(let i = 0; i < result["icebreakers"].length; i++){
@@ -208,7 +439,6 @@ backgroundLayer.add(background);
           custom_class: colorDict[(result["icebreakers"][i]["id"] % 10).toString()],
           name : "vel: " + (vel.toFixed(1)).toString() + "kn; e_id: " + edge_id.toString()
         });
-        ships.add(result["icebreakers"][i]["path"][j]["caravan"][k]);
         }
       }
     }
@@ -216,8 +446,6 @@ backgroundLayer.add(background);
 
     //ships
     if("ships" in result){
-
-    
     for(let i = 0; i < result["ships"].length; i++){
       for(let j = 0; j < result["ships"][i]["path"].length; j++){
         let start_time = new Date(result["ships"][i]["path"][j]["start_time"]).getTime();
@@ -252,17 +480,13 @@ backgroundLayer.add(background);
                     custom_class: "cc-ships",
                     name: time_taken == 0 ? "wait" : "vel: " + (vel.toFixed(1)).toString() + "kn; e_id: " + edge_id.toString()
                   });
-
-
-
       }
-      ships.add(result["ships"][i]["id"]); 
     }
   }
 
 
     var ships_schedule = [];
-    for (let i = 0; i <= Math.max.apply(Math, Array.from(ships)); i++){
+    for (let i = 0; i < result["ships"].length; i++){
       ships_schedule.push([]);
     }
 
@@ -305,13 +529,15 @@ backgroundLayer.add(background);
     for (let i = 0; i < result["icebreakers"].length; i++){
       const tr = tbl.insertRow();
       const td = tr.insertCell();
-      td.appendChild(document.createTextNode("icb" + result["icebreakers"][i]["id"]));
+      td.appendChild(document.createTextNode(result["icebreakers"][i]["name"] + " [id:" + result["icebreakers"][i]["id"] + "]"));
     }
 
-    for(let i = 0; i <= Math.max.apply(Math, Array.from(ships)); i++){
+
+
+    for(let i = 0; i < result["ships"].length; i++){
       const tr = tbl.insertRow();
       const td = tr.insertCell();
-      td.appendChild(document.createTextNode("ship" + (i).toString())); 
+      td.appendChild(document.createTextNode(result["ships"][i]["name"] + " [id:" + (i).toString() + "]")); 
     }
     
     gg.appendChild(tbl);
@@ -348,13 +574,23 @@ backgroundLayer.add(background);
       let det = new Date(val);
       det = addHours(det, 3);
       node.textContent = det.toISOString();
-      layer.removeChildren();
-      if(det < weeks[cur_week_id] || (cur_week_id != weeks.length - 1 && det >= weeks[cur_week_id + 1])) {
+      let to_delete = layer.find(".objects");
+      for(let i = 0; i < to_delete.length; i++){
+        to_delete[i].destroy();
+      }
+      if( (det < weeks[cur_week_id] && cur_week_id != 0) || (cur_week_id != weeks.length - 1 && det >= weeks[cur_week_id + 1])) {
         for(let i = 0; i < weeks.length; i++){
           if(weeks[i]<= det){
             cur_week_id = i;
-            background.fillPatternImage(backgrounds[i]);
           }
+        }
+
+        // change edges colors in canvas
+        let datename = weeks[cur_week_id].getDate().toString().padStart(2, '0') + "-" + months[weeks[cur_week_id].getMonth()] + "-" + (weeks[cur_week_id].getFullYear() - 2).toString();
+        console.log(datename);
+        for(let j = 0; j < konvaLines.length; j++){
+          let color = edges[j]["type"][datename] == 0 ? 'green' : (edges[j]["type"][datename] == 1 ? 'blue' : (edges[j]["type"][datename] == 2 ? 'yellow' : 'red'));
+          konvaLines[j].stroke(color);
         }
       }
 
@@ -383,15 +619,16 @@ backgroundLayer.add(background);
                       (ports[result["icebreakers"][i]["path"][j]["end"]]["lon"] - 
                       ports[result["icebreakers"][i]["path"][j]["start"]]["lon"]) * vel * (val - start_time) / path_length;
  
-            layer.add(new Konva.Rect({x : (x - lat_start) * cell_width - cell_width / 2, y : (canvas_height) - (y - long_start) * cell_height - cell_width / 2, width: cell_width, height : cell_width, fill : colorDictCanvas[(result["icebreakers"][i]["id"] % 10).toString()]}));           
+            layer.add(new Konva.Rect({x : (x - lat_start) * cell_width - cell_width, y : (canvas_height) - (y - long_start) * cell_height - cell_width, width: cell_width, height : cell_width, fill : colorDictCanvas[(result["icebreakers"][i]["id"] % 10).toString()], name : "objects"}));           
             
             layer.add(new Konva.Text({
-              x: (x - lat_start) * cell_width - cell_width / 2,
-              y: (canvas_height) - (y - long_start) * cell_height - cell_width / 2 - cell_height / 3,
+              x: (x - lat_start) * cell_width - cell_width,
+              y: (canvas_height) - (y - long_start) * cell_height - 2*cell_width - cell_height / 3,
               text: "{" + result["icebreakers"][i]["path"][j]["caravan"].toString() + "}",
               fontSize: 14,
               fontFamily: 'Sans Serif',
               fill: 'black',
+              name : "objects"
             }));
             break;
           }
@@ -402,17 +639,22 @@ backgroundLayer.add(background);
             if(val > time_left && val < time_right){
               const y = ports[result["icebreakers"][i]["path"][j]["end"]]["lat"];
               const x = ports[result["icebreakers"][i]["path"][j]["end"]]["lon"];
-              layer.add(new Konva.Rect({x : (x - lat_start) * cell_width - cell_width / 2, y : (canvas_height) - (y - long_start) * cell_height - cell_width / 2, width: cell_width, height : cell_width, fill : colorDictCanvas[(result["icebreakers"][i]["id"] % 10).toString()]}));
+              layer.add(new Konva.Rect({x : (x - lat_start) * cell_width - cell_width, 
+                                        y : (canvas_height) - (y - long_start) * cell_height - cell_width, 
+                                        width: cell_width, 
+                                        height : cell_width, 
+                                        fill : colorDictCanvas[(result["icebreakers"][i]["id"] % 10).toString()], 
+                                        name : "objects"}));
               
               layer.add(new Konva.Text({
-                x: (x - lat_start) * cell_width - cell_width / 2,
-                y: (canvas_height) - (y - long_start) * cell_height - cell_width / 2 - cell_height / 3,
+                x: (x - lat_start) * cell_width - cell_width,
+                y: (canvas_height) - (y - long_start) * cell_height - 2 * cell_width - cell_height / 3,
                 text: "{" + result["icebreakers"][i]["path"][j]["caravan"].toString() + "}",
                 fontSize: 14,
                 fontFamily: 'Sans Serif',
                 fill: 'black',
+                name : "objects"
               }));
-
               break;
             }
           }
@@ -438,25 +680,23 @@ backgroundLayer.add(background);
             const x = ports[ships_schedule[i][j]["start"]]["lon"] + 
                       (ports[ships_schedule[i][j]["end"]]["lon"] - 
                       ports[ships_schedule[i][j]["start"]]["lon"]) * vel * (val - start_time) / path_length;
-          
-
-
-            layer.add(new Konva.RegularPolygon({x : (x - lat_start) * cell_width, y : (canvas_height) - (y - long_start) * cell_height , radius : cell_width, fill : "#6779ca", sides : 3}));
+            layer.add(new Konva.RegularPolygon({x : (x - lat_start) * cell_width - cell_width / 2, 
+                                                y : (canvas_height) - (y - long_start) * cell_height - cell_width / 2, 
+                                                radius : cell_width, 
+                                                fill : "#6779ca", 
+                                                sides : 3, 
+                                                name : "objects"}));
               
             layer.add(new Konva.Text({
-              x: (x - lat_start) * cell_width - cell_width / 2,
-              y: (canvas_height) - (y - long_start) * cell_height - 1.5*cell_width  + cell_height / 3,
+              x: (x - lat_start) * cell_width - cell_width,
+              y: (canvas_height) - (y - long_start) * cell_height - 2*cell_width  + cell_height / 3,
               text: i.toString(),
               fontSize: 14,
               fontFamily: 'Sans Serif',
               fill: 'white',
+              name : "objects"
             }));
-
-            // ctx.fillStyle = "#6779ca";
-            // ctx.fillRect((x - lat_start) * cell_width - cell_width / 2, (canvas.height) - (y - long_start) * cell_height - cell_width / 2, cell_width , cell_width);
-            // ctx.fillStyle = "white";
-            // ctx.fillText(i.toString(), (x - lat_start) * cell_width - cell_width / 2, (canvas.height) - (y - long_start) * cell_height - cell_width / 2 + cell_height / 3);
-            break;
+           break;
           }
 
           if(j+1 != ships_schedule[i].length) {
@@ -465,19 +705,21 @@ backgroundLayer.add(background);
             if(val > time_left && val < time_right){
               const y = ports[ships_schedule[i][j]["end"]]["lat"];
               const x = ports[ships_schedule[i][j]["end"]]["lon"];
-              layer.add(new Konva.RegularPolygon({x : (x - lat_start) * cell_width , y : (canvas_height) - (y - long_start) * cell_height , radius :  cell_width, fill : "#6779ca", sides : 3}));
+              layer.add(new Konva.RegularPolygon({x : (x - lat_start) * cell_width - cell_width / 2, 
+              y : (canvas_height) - (y - long_start) * cell_height - cell_width / 2, 
+                                                  radius :  cell_width, 
+                                                  fill : "#6779ca", 
+                                                  sides : 3, 
+                                                  name : "objects"}));
               layer.add(new Konva.Text({
-                x: (x - lat_start) * cell_width - cell_width / 2,
-                y: (canvas_height) - (y - long_start) * cell_height - 1.5*cell_width  + cell_height / 3,
+                x: (x - lat_start) * cell_width - cell_width,
+                y: (canvas_height) - (y - long_start) * cell_height - 2*cell_width  + cell_height / 3,
                 text: i.toString(),
                 fontSize: 14,
                 fontFamily: 'Sans Serif',
                 fill: 'white',
+                name : "objects"
               }));
-              // ctx.fillStyle = "#6779ca";
-              // ctx.fillRect((x - lat_start) * cell_width - cell_width / 2, (canvas.height) - (y - long_start) * cell_height - cell_width / 2, cell_width , cell_width);
-              // ctx.fillStyle = "white";
-              // ctx.fillText(i.toString(), (x - lat_start) * cell_width - cell_width / 2, (canvas.height) - (y - long_start) * cell_height - cell_width / 2 + cell_height / 3);
               break;
             }
           }
@@ -485,14 +727,8 @@ backgroundLayer.add(background);
         }
       }
     });
-
-  
-  
     }
-
   fr.readAsText(files.item(0));
-  };
-
-  
+  };  
 });
 
