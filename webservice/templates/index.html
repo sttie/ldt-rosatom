@@ -1,0 +1,79 @@
+<html>
+
+<head>
+    
+    <link rel="stylesheet" href="static/style.css">
+    <link rel="stylesheet" href="static/bootstrap.min.css">
+    <link rel="stylesheet" href="static/bootstrap-slider.css">
+    <link rel="stylesheet" href="static/frappe-gantt.css">
+    <script src="static/jquery.min.js"></script>
+    <script src="static/bootstrap.min.js"></script>
+    <script src="static/bootstrap-slider.js"></script>
+    <script src="static/frappe-gantt.js"></script>
+    <script src="static/konva.min.js"></script>
+
+</head>
+
+<body>
+
+    <div id="main">
+        <div id="container" style="border:1px solid #000000;">
+        </div>
+        <div id="left">
+            <div id="legend" style="border:1px solid #000000;">
+            </div>
+            <div id="leftchild">
+            </div>
+        </div>
+        <div id="options">
+            <div id="inp" class="mb-3">
+                <label for="integrvelocity" class="form-label">Выберите excel файл с ледовой проходимостью.</label>
+                <input class="form-control" type="file" id="integrvelocity" accept="application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" value="Vel" />
+            </div>
+            <div id="inp" class="mb-3">
+                <label for="graphdata" class="form-label">Выберите excel файл с графом</label>
+                <input class="form-control"  type="file" id="graphdata" accept="application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" value="graph" />
+            </div>
+            <div id="inp" class="mb-3">
+                <label for="scheduleships" class="form-label">Выберите excel файл с кораблями</label>
+                <input class="form-control" type="file" id="scheduleships" accept="application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" value="ships" />
+            </div>
+            <div id="inp" class="mb-3">
+                Размер каравана:
+                <input id="numberinput" type="number" min="1" value="3">
+            </div>
+            <div id="inp" class="mb-3">
+                <button id="import">Начать</button>
+            </div>
+            </div>
+        </div>
+    </div>
+    <div id="results">
+        <div id="mainslider">
+            <div id="res"></div>
+            <div id="dateText"></div>
+                <div id="slider" data-slider-id='mainSlider' type="text" style="display:None">
+        
+                </div>
+                <div id="g">
+                    <div id="t">
+                        <table >
+    
+                        </table>
+                    </div>
+                    <div id="gan">
+                        <svg id="gantt" class="dark"></svg>
+                    </div>
+                    
+                </div>
+                
+        </div>
+    </div>
+    
+
+
+    <script src="static/main.js"></script>
+</body>
+    
+</html>
+

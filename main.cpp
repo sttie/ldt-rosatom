@@ -10,6 +10,8 @@
 #include <boost/graph/graphviz.hpp>
 #include <boost/graph/properties.hpp>
 #include <json.hpp>
+#include <fstream>
+#include <string>
 using json = nlohmann::json;
 
 // void GenerateGraph(Graph& graph) {
@@ -24,19 +26,36 @@ using json = nlohmann::json;
     // boost::add_edge(2, 6, 50.31, graph);
 // }
 
-int main() {
+int main(int argc, char* argv[]) {
     #ifdef _WIN32
         SetConsoleOutputCP(65001);
     #endif
+
+    std::string graphDataPath, scheduleShipsPath;
+
+    if(argc > 1) {
+        graphDataPath = argv[1];
+        scheduleShipsPath = argv[2];
+        if(graphDataPath[0] == '"') {
+            graphDataPath = graphDataPath.substr(1, graphDataPath.size() - 2);
+        }
+        if(scheduleShipsPath[0] == '"'){
+            scheduleShipsPath = scheduleShipsPath.substr(1, scheduleShipsPath.size() - 2);
+        }
+        std::cout << graphDataPath << " " << scheduleShipsPath << std::endl;
+    } else {
+        graphDataPath = "../dataset/ГрафДанные.xlsx";
+        scheduleShipsPath = "../dataset/Расписание движения судов.xlsx";
+    }
     
     /** Parsing input data **/
 
-    GraphPointsInfo graph_points = parser::ParseGraphPointsFromExcel("../dataset/ГрафДанные.xlsx");
+    GraphPointsInfo graph_points = parser::ParseGraphPointsFromExcel(graphDataPath);
     // auto ice_grid = parser::ParseIceGrid("../dataset/IntegrVelocity.xlsx");
     std::cout << "ice grid has been read!" << std::endl;
 
     // auto icebreakers = parser::ParseIcebreakers("../dataset/ScheduleTest.xlsx", graph_points);
-    auto icebreakers = parser::ParseIcebreakers("../dataset/Расписание движения судов.xlsx", graph_points);
+    auto icebreakers = parser::ParseIcebreakers(scheduleShipsPath, graph_points);
     // for (auto& icebreaker : *icebreakers) {
     //     std::cout << icebreaker.id.id << " "
     //               << icebreaker.name << ": "
@@ -49,7 +68,7 @@ int main() {
     std::cout << "icebreakers has been read!" << std::endl;
 
     // auto ships = parser::ParseShipsSchedule("../dataset/ScheduleTest.xlsx", graph_points);
-    auto ships = parser::ParseShipsSchedule("../dataset/Расписание движения судов.xlsx", graph_points);
+    auto ships = parser::ParseShipsSchedule(scheduleShipsPath, graph_points);
     // for (auto& ship : *ships) {
     //     std::cout << ship.id.id << " "
     //               << ship.name << ": ice_class=" << static_cast<int>(ship.ice_class)
