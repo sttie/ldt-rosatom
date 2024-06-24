@@ -10,8 +10,6 @@ add_executable(scheduler
     main.cpp
     src/parser.cpp
     src/algos/greedy.cpp
-    src/algos/pseudo_exhaustive.cpp
-    src/algos/optimization.cpp
     src/path.cpp
 )
 
