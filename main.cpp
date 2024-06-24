@@ -14,17 +14,10 @@
 #include <string>
 using json = nlohmann::json;
 
-// void GenerateGraph(Graph& graph) {
-    // boost::add_edge(5, 1, 116.74, graph);
-    // boost::add_edge(0, 2, 260.18, graph);
-    // boost::add_edge(0, 5, 157.6, graph);
-    // boost::add_edge(0, 4, 192.45, graph);
-    // boost::add_edge(2, 3, 409.31, graph);
-    // boost::add_edge(4, 1, 200.31, graph);
-    // boost::add_edge(0, 1, 600.31, graph);
-    // boost::add_edge(5, 6, 191.31, graph);
-    // boost::add_edge(2, 6, 50.31, graph);
-// }
+
+#include "tests/validate.h"
+
+using json = nlohmann::json;
 
 int main(int argc, char* argv[]) {
     #ifdef _WIN32
@@ -85,6 +78,10 @@ int main(int argc, char* argv[]) {
 
     /** Дополнительная подготовка данных **/
 
+    // для валидации
+    auto ships_copy = *ships;
+    auto icebreakers_copy = *icebreakers;
+
 
     json res_json;
     res_json["icebreakers"] = json::array();
@@ -109,6 +106,11 @@ int main(int argc, char* argv[]) {
     double sum;
 
     Schedule res = algos::greedy(pm, &sum);
+
+    Validate(std::make_shared<std::vector<Ship>>(ships_copy),
+             std::make_shared<std::vector<Icebreaker>>(icebreakers_copy),
+             res, pm);
+    std::cout << "validation is okay!" << std::endl;
 
 
     std::ofstream schedule("schedule.txt");

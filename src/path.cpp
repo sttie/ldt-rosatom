@@ -549,3 +549,208 @@ std::string PathManager::GetCurrentOkayDateByTime(Days time) const {
 
     throw std::runtime_error("lol no okay date!");
 }
+
+std::pair<float, std::vector<PDPPoint>> PathManager::TimeToSail(const Caravan& caravan) {
+    if (!caravan.icebreaker_id.is_initialized()) {
+        throw std::runtime_error("caravan's icebreaker is not initialized!");
+    }
+    if (caravan.ships_id.empty()) {
+        return std::make_pair(0, std::vector<PDPPoint>{});
+    }
+    
+    std::vector<PDPPoint> points;
+    for (const auto& ship_id : caravan.ships_id) {
+        const auto& ship = ships->at(ship_id.id);
+        points.push_back(PDPPoint{ship.cur_pos, ship.id});
+        points.push_back(PDPPoint{ship.finish, std::nullopt});
+    }
+
+    std::sort(points.begin(), points.end());
+
+    const auto& icebreaker = icebreakers->at(caravan.icebreaker_id->id);
+    
+    float optimal_time = 10000.0f;
+    std::vector<PDPPoint> optimal_points;
+
+    const auto old_cur_time = cur_time;
+
+    // изменяем все cur_pos в караване
+    std::vector<std::pair<ShipId, VertID>> old_ships_cur_pos;
+    std::pair<IcebreakerId, VertID> old_icebreaker_cur_pos = std::make_pair(icebreaker.id, icebreaker.cur_pos);
+    {
+        auto last_voyage = getCurrentVoyage(caravan);
+        if (last_voyage.start_time != 0) {
+            for (auto ship_id : caravan.ships_id) {
+                old_ships_cur_pos.push_back(std::make_pair(ship_id, (*ships)[ship_id.id].cur_pos));
+                (*ships)[ship_id.id].cur_pos = last_voyage.end_point;
+            }
+            (*icebreakers)[icebreaker.id.id].cur_pos = last_voyage.end_point;
+            cur_time = last_voyage.end_time;
+        }
+    }
+
+    auto process_points = [this](const Icebreaker& icebreaker, const std::vector<PDPPoint>& points) {
+        const Ship* min_speed_ship = nullptr;
+        auto min_speed = icebreaker.speed;
+        size_t icebreaker_graph_index = GetIcebreakerIndexByName(icebreaker.name);
+
+        float time = 0;
+        VertID current_vertex = icebreaker.cur_pos;
+
+        for (size_t i = 0; i < points.size(); ++i) {
+            auto okay_date = GetCurrentOkayDateByTime(cur_time);
+
+            float inc_time;
+            if (min_speed_ship == nullptr) {
+                const auto& icebreaker_distances = date_to_distances.at(okay_date).at(icebreaker_graph_index);
+                inc_time = icebreaker_distances[current_vertex][points[i].vertex];
+            } else {
+                inc_time = TimeToArriveUnderFakeProvodka(*min_speed_ship, icebreaker, current_vertex, points[i].vertex);
+            }
+
+            if (points[i].ship_id.has_value()) {
+                if (const auto& ship = ships->at(points[i].ship_id.value().id); ship.speed < min_speed) {
+                    min_speed = ship.speed;
+                    min_speed_ship = &ship;
+                }
+            }
+
+            time += inc_time;
+            cur_time += inc_time;
+            current_vertex = points[i].vertex;
+        }
+
+        return std::make_pair(time, points);
+    };
+
+    do {
+        auto [time, points_sequence] = process_points(icebreaker, points);
+        if (time < optimal_time) {
+            optimal_time = time;
+            optimal_points = std::move(points_sequence);
+        }
+        cur_time = old_cur_time;
+    } while (std::next_permutation(points.begin(), points.end()));
+
+    // восстанавливаем положения судов в караване
+    {
+        (*icebreakers)[old_icebreaker_cur_pos.first.id].cur_pos = old_icebreaker_cur_pos.second;
+        for (const auto& [ship_id, old_cur_pos] : old_ships_cur_pos) {
+            (*ships)[ship_id.id].cur_pos = old_cur_pos;
+        }
+    }
+
+    return std::make_pair(optimal_time, optimal_points);
+}
+
+Schedule PathManager::SailPath(const Icebreaker& icebreaker__, const std::vector<PDPPoint>& points) {
+    Schedule schedule;
+    const auto old_cur_time = cur_time;
+
+    Icebreaker icebreaker = icebreaker__;
+
+    Caravan current_caravan;
+    current_caravan.icebreaker_id = icebreaker.id;
+
+    // передвигаем ледокол
+    auto old_icebreaker_cur_pos = std::make_pair(icebreaker.id, icebreaker.cur_pos);
+    {
+        auto last_voyage = getCurrentVoyage(current_caravan);
+        if (last_voyage.start_time != 0) {
+            icebreaker.cur_pos = last_voyage.end_point;
+            (*icebreakers)[icebreaker.id.id].cur_pos = icebreaker.cur_pos;
+            cur_time = last_voyage.end_time;
+        }
+    }
+
+    VertID current_vert = icebreaker.cur_pos;
+
+    for (size_t i = 0; i < points.size(); ++i) {
+        // проверяем, могут ли корабли в караване доехать самостоятельно
+        for (auto it = current_caravan.ships_id.begin(); it != current_caravan.ships_id.end(); ) {
+            const auto& ship = ships->at(it->id);
+            auto alone_path = GetShortestPathAlone(ship, current_vert, ship.finish);
+            if (!alone_path.empty()) {
+                Caravan alone_caravan; alone_caravan.ships_id.insert(*it);
+                for (auto&& voyage : std::move(alone_path)) {
+                    schedule.push_back({alone_caravan, std::move(voyage)});
+                }
+
+                it = current_caravan.ships_id.erase(it);
+            } else {
+                ++it;
+            }
+        }
+
+        auto shortest_voyages = GetShortestPathForCaravan(current_caravan, current_vert, points[i].vertex);
+        for (auto voyage : std::move(shortest_voyages)) {
+            schedule.push_back({current_caravan, std::move(voyage)});
+        }
+
+        if (points[i].ship_id.has_value()) {
+            current_caravan.ships_id.insert(points[i].ship_id.value());
+        }
+
+        current_vert = points[i].vertex;
+    }
+
+    (*icebreakers)[old_icebreaker_cur_pos.first.id].cur_pos = old_icebreaker_cur_pos.second;
+
+    cur_time = old_cur_time;
+    return schedule;
+}
+
+std::vector<Voyage> PathManager::GetShortestPathForCaravan(const Caravan& caravan, VertID start, VertID end) {
+    if (!caravan.icebreaker_id.is_initialized()) {
+        throw std::runtime_error("GetShortestPathForCaravan(): caravan MUST have an icebreaker");
+    }
+
+    std::vector<Voyage> path;
+
+    VertID current_vert = start;
+    auto old_cur_time = cur_time;
+    auto min_speed_ship = GetMinimalSpeedShipInCaravan(caravan);
+
+    const auto& icebreaker = icebreakers->at(caravan.icebreaker_id.value().id);
+    size_t icebreaker_index = GetIcebreakerIndexByName(icebreaker.name);
+
+    while (current_vert != end) {
+        auto next_vert = GetNextVertexInShortestPath(current_vert, icebreaker, caravan, end);
+        if (!next_vert.has_value()) {
+            return {};
+        }
+
+        Voyage current_voyage;
+        current_voyage.start_point = current_vert;
+        current_voyage.end_point = next_vert.value();
+        current_voyage.start_time = cur_time;
+
+        float time_to_next_vert;
+
+        auto okay_date = GetCurrentOkayDateByTime(cur_time);
+        if (min_speed_ship == nullptr) {
+            const auto& graph = date_to_graph.at(okay_date).at(icebreaker_index);
+            time_to_next_vert = GetEdgeWeight(graph, current_vert, next_vert.value());
+        } else {
+            const auto& graph = date_to_graph.at(okay_date).at(ship_class_to_index.at(min_speed_ship->ice_class));
+            time_to_next_vert = GetEdgeWeight(graph, current_vert, next_vert.value()) / min_speed_ship->speed;
+        }
+
+        current_voyage.end_time = cur_time + time_to_next_vert;
+        path.push_back(current_voyage);
+
+        cur_time = current_voyage.end_time;
+        current_vert = next_vert.value();
+    }
+
+    cur_time = old_cur_time;
+
+    return path;
+}
+
+bool PathManager::HasEdge(const Icebreaker& icebreaker, Days time, VertID from, VertID to) const {
+    size_t icebreaker_graph_index = GetIcebreakerIndexByName(icebreaker.name);
+    auto okay_date = GetCurrentOkayDateByTime(time);
+    const auto& graph = date_to_graph.at(okay_date).at(icebreaker_graph_index);
+    return boost::edge(from, to, graph).second;
+}
