@@ -1,7 +1,7 @@
 #main {
     display: block;
     margin: 0 auto;
-    width: 2033.33px;
+    width: 1016.665px;
 }
 
 #dateText {
@@ -11,18 +11,22 @@
 #results {
     display : block;
     margin: 0 auto;
-    width : 2033.33px;
+    width : 1016.66px;
+}
+
+#send {
+    display:inline-block;
+    width: 200px;
 }
 
 #mainslider {
-    width: 1300px;
+    width: 1016.66px;
     display:block;
     margin: 0 auto;
 }
 
 #legend {
-    display : inline-block;
-    width : 1200px;
+    width : 550px;
 }
 
 #gan{
@@ -92,7 +96,7 @@
 
     overflow-x:scroll;
     height: auto;
-    width: 1000px;
+    width: 700px;
 }
 
 .cc-ships g rect{
@@ -120,5 +124,15 @@
 #options {
     display: inline-block;
     margin: 0 auto;
-    width: 800px;
+    width: 450px;
+
+}
+
+#left {
+    display: inline-block;
+    height : 80px;
+}
+
+#numberinput {
+    width : 50px;
 }
