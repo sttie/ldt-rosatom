@@ -689,7 +689,9 @@ std::pair<Schedule, Schedule> PathManager::SailPath(const Icebreaker& icebreaker
             schedule_icebreaker.push_back({current_caravan, std::move(voyage)});
         }
 
-        cur_time = shortest_voyages.back().end_time;
+        if (shortest_voyages.size() > 0) {
+            cur_time = shortest_voyages.back().end_time;
+        }
 
         if (points[i].ship_id.has_value()) {
             current_caravan.ships_id.insert(points[i].ship_id.value());
