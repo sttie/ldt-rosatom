@@ -105,6 +105,12 @@ struct PDPPoint {
     bool operator<(const PDPPoint& other) const {
         return vertex < other.vertex;
     }
+
+    bool operator==(const PDPPoint& other) const {
+        return vertex == other.vertex &&
+                ((ship_id.has_value() && other.ship_id.has_value() && ship_id.value() == other.ship_id.value()) ||
+                 (!ship_id.has_value() && !other.ship_id.has_value()));
+    }
 };
 
 class PathManager {

@@ -7,6 +7,8 @@
 #include <numeric>
 #include <algorithm>
 
+#include "util.h"
+
 struct Event {
     Days time;
     bool application = false;
@@ -37,9 +39,9 @@ DateQueue collectVoyagesStarts(Ships &ships, Days cur_time = 0) {
 }
 
 std::vector<Voyage> checkPathAlone(Ship &ship, PathManager &pm) {
-    auto alone_time = pm.TimeToArriveAlone(ship, ship.cur_pos, {ship.finish});
+    auto alone_time = pm.TimeToArriveAlone(ship, ship.cur_pos, ship.finish);
     if (alone_time < 100) {
-        auto voyages = pm.GetShortestPathAlone(ship, ship.cur_pos, {ship.finish});
+        auto voyages = pm.GetShortestPathAlone(ship, ship.cur_pos, ship.finish);
         float alone2 = 0;
         for (auto &v: voyages) {
             alone2 += v.end_time - v.start_time;
@@ -203,11 +205,13 @@ Schedule algos::pseudo_exhaustive(PathManager &manager, double *sum_res) {
                     Caravan caravan;
                     caravan.icebreaker_id = icebreaker.id;
                     caravan.ships_id = std::set<ShipId>(ships_combinations[j].begin(), ships_combinations[j].end());
+                    
+                    // TimerScope ts("TimeToSail call");
                     auto [time, _] = manager.TimeToSail(caravan);
                     if (ships_combinations[j].size() == 0)
                         icebreaker2caravan_weights[i][j] = 1000;
                     else
-                        icebreaker2caravan_weights[i][j] = time / ships_combinations[j].size();
+                        icebreaker2caravan_weights[i][j] = time / (ships_combinations[j].size() * 1.0f);
                         //(manager.GetMaxShipsInCaravan() - ships_combinations[j].size()) * 10; // penalty for empty space
                 }
             }
