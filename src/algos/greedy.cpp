@@ -5,7 +5,7 @@
 #include <iostream>
 #include <algorithm>
 
-const double score_threshold = 0.2;
+const double score_threshold = 0.3;
 
 float weightShipAlone(const Ship &ship, const Days &cur_time, float max_speed, double cur_max_waiting_time) {
     float
