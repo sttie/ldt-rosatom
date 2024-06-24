@@ -25,6 +25,7 @@ int main(int argc, char* argv[]) {
     #endif
 
     std::string graphDataPath, scheduleShipsPath;
+    int MAX_SHIPS_IN_CARAVAN;
 
     if(argc > 1) {
         graphDataPath = argv[1];
@@ -36,9 +37,16 @@ int main(int argc, char* argv[]) {
             scheduleShipsPath = scheduleShipsPath.substr(1, scheduleShipsPath.size() - 2);
         }
         std::cout << graphDataPath << " " << scheduleShipsPath << std::endl;
+
+        MAX_SHIPS_IN_CARAVAN = std::stoi(argv[3]);
+        if (MAX_SHIPS_IN_CARAVAN < 0) {
+            std::cout << "max ships in caravan cannot be less than 0" << std::endl;
+            exit(-1);
+        }
     } else {
         graphDataPath = "../dataset/ГрафДанные.xlsx";
         scheduleShipsPath = "../dataset/Расписание движения судов.xlsx";
+        MAX_SHIPS_IN_CARAVAN = 3;
     }
     
     /** Parsing input data **/
@@ -101,12 +109,6 @@ int main(int argc, char* argv[]) {
     }
 
     // /** Алгоритм **/
-    int MAX_SHIPS_IN_CARAVAN = std::stoi(argv[3]);
-    if (MAX_SHIPS_IN_CARAVAN < 0) {
-        std::cout << "max ships in caravan cannot be less than 0" << std::endl;
-        exit(-1);
-    }
-
     PathManager pm(std::move(graph), icebreakers, ships, MAX_SHIPS_IN_CARAVAN);
 
     double sum;
