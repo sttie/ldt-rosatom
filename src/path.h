@@ -111,6 +111,7 @@ class PathManager {
 private:
     DatesToIceGraph date_to_graph;
     DatesToDistances date_to_distances;
+    size_t MAX_SHIPS_IN_CARAVAN = 3;
 
 public:
     Days cur_time = 0;
@@ -119,7 +120,11 @@ public:
     std::unordered_map<ShipId, Voyage> ship_to_voyage;
     std::unordered_map<IcebreakerId, Voyage> icebreaker_to_voyage;
 
-    PathManager(DatesToIceGraph date_to_graph, std::shared_ptr<Icebreakers> icebreakers, std::shared_ptr<Ships> ships);
+    size_t GetMaxShipsInCaravan() const {
+        return MAX_SHIPS_IN_CARAVAN;
+    }
+
+    PathManager(DatesToIceGraph date_to_graph, std::shared_ptr<Icebreakers> icebreakers, std::shared_ptr<Ships> ships, size_t MAX_SHIPS_IN_CARAVAN = 3);
     // build path to point, return next step, update current_route for all boats in caravan
     Voyage sail2point(const Icebreaker &icebreaker, const Caravan &caravan, VertID point);
     // build path to all icebreaker's caravan final points, return next step, update current_route

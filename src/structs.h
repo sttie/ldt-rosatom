@@ -13,7 +13,7 @@
 
 // Input data types
 
-#define MAX_SHIPS 3
+// #define MAX_SHIPS 3
 
 enum class IceClass {
     kNoIceClass,

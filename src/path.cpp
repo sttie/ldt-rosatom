@@ -188,10 +188,12 @@ float PathManager::TimeToArriveAlone(const Ship& ship, VertID start, VertID end)
     );
 }
 
-PathManager::PathManager(DatesToIceGraph date_to_graph_, std::shared_ptr<Icebreakers> icebreakers, std::shared_ptr<Ships> ships)
+PathManager::PathManager(DatesToIceGraph date_to_graph_, std::shared_ptr<Icebreakers> icebreakers, std::shared_ptr<Ships> ships,
+                         size_t MAX_SHIPS_IN_CARAVAN)
     : date_to_graph(std::move(date_to_graph_))
     , icebreakers(std::move(icebreakers))
     , ships(std::move(ships))
+    , MAX_SHIPS_IN_CARAVAN(MAX_SHIPS_IN_CARAVAN)
 {
     std::vector<std::thread> threads;
     std::mutex date_to_distances_mutex;

@@ -38,7 +38,7 @@ float weightShipForIcebreaker(const Icebreaker &icebreaker, const Ship &ship, Pa
 }
 
 float weightIcebreaker(const Icebreaker &icebreaker, const Caravan &caravan, const PathManager &pm, const std::set<ShipId> &in_caravans) {
-    float caravan_coef = (caravan.ships_id.size()) / MAX_SHIPS;
+    float caravan_coef = (caravan.ships_id.size() * 1.0f) / (pm.GetMaxShipsInCaravan() * 1.0f);
 
     std::vector<VertID> waiting_positions;
     std::vector<ShipId> waiting_ships;
@@ -200,7 +200,7 @@ Schedule algos::greedy(PathManager &manager, double *sum_res) {
                 for (auto &icebreaker: icebreakers) {
                     Voyage last_voyage = manager.getCurrentVoyage(icebreaker.id);
                     if (icebreaker.cur_pos == ships[ship_id.id].cur_pos && last_voyage.start_point != icebreaker.cur_pos &&
-                        caravans[icebreaker2caravan[icebreaker.id.id]].ships_id.size() < MAX_SHIPS)
+                        caravans[icebreaker2caravan[icebreaker.id.id]].ships_id.size() < manager.GetMaxShipsInCaravan())
                     {
                         // if (checkShipForCaravan(ships[ship_id.id], caravans[icebreaker2caravan[icebreaker.id.id]], manager)) {
                             std::cout << "\t[" << icebreaker.id.id << "] picked_up " << ship_id.id << "\n";
@@ -293,7 +293,7 @@ Schedule algos::greedy(PathManager &manager, double *sum_res) {
             decision.end_time = 0;
             bool choose_pickup = false;
 
-            if (cur_caravan.ships_id.size() < MAX_SHIPS) {
+            if (cur_caravan.ships_id.size() < manager.GetMaxShipsInCaravan()) {
                 // Add weights especially for this icebreaker and sort ships
                 WeightedShips ships4icebreaker = ships_waiting;
                 for (auto& [ship_id, ship_score]: ships4icebreaker)
@@ -316,7 +316,7 @@ Schedule algos::greedy(PathManager &manager, double *sum_res) {
 
                     // Decide to pick-up ship
                     if ((best_score < score_threshold || cur_caravan.ships_id.empty()) && // good score or empty caravan
-                        cur_caravan.ships_id.size() < MAX_SHIPS && // check limit on caravan size
+                        cur_caravan.ships_id.size() < manager.GetMaxShipsInCaravan() && // check limit on caravan size
                         !targeted_ships.count(best_ship_id)) // we dont want to target one ship by different icebreakers in one iteration
                         // checkShipForCaravan(ships[best_ship_id.id], caravans[icebreaker2caravan[icebreaker.id.id]], manager)) 
                     {
