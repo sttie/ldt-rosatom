@@ -21,15 +21,7 @@ target_include_directories(scheduler PUBLIC third-party/)
 target_include_directories(scheduler PUBLIC third-party/boost/graph/include)
 target_include_directories(scheduler PUBLIC third-party/json/include/)
 
-set(CMAKE_PREFIX_PATH "third-party/or-tools-linux/lib/cmake") 
-find_package(ortools REQUIRED CONFIG)
-
-add_library(solver INTERFACE)
-target_include_directories(solver INTERFACE ../third-party/or-tools-linux/include)
-target_link_directories(solver INTERFACE ../third-party/or-tools-linux/lib)
-target_link_libraries(solver INTERFACE ortools::ortools)
-
-target_link_libraries(scheduler PRIVATE OpenXLSX::OpenXLSX solver)
+target_link_libraries(scheduler PRIVATE OpenXLSX::OpenXLSX)
 
 # if(MSVC)
 #   target_compile_options(scheduler PRIVATE /W4 /WX)
