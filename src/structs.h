@@ -165,12 +165,12 @@ using ShipsPtr = std::shared_ptr<Ships>;
 using Icebreakers = std::vector<Icebreaker>;
 using IcebreakersPtr = std::shared_ptr<Icebreakers>;
 
-struct SheculeAtom {
+struct ScheduleAtom {
     Caravan caravan;
     Voyage edge_voyage;
 };
 
-typedef std::vector<SheculeAtom> Schedule; // result of algorithm - caravan + path
+typedef std::vector<ScheduleAtom> Schedule; // result of algorithm - caravan + path
 
 inline std::string CaravanToString(const std::set<ShipId> &caravan) {
     std::string caravan_str = "{";
