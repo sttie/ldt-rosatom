@@ -59,6 +59,7 @@ int main() {
 
     // для валидации
     auto ships_copy = *ships;
+    auto icebreakers_copy = *icebreakers;
 
 
     json res_json;
@@ -85,7 +86,9 @@ int main() {
 
     Schedule res = algos::greedy(pm, &sum);
 
-    Validate(std::make_shared<std::vector<Ship>>(ships_copy), res, pm);
+    Validate(std::make_shared<std::vector<Ship>>(ships_copy),
+             std::make_shared<std::vector<Icebreaker>>(icebreakers_copy),
+             res, pm);
     std::cout << "validation is okay!" << std::endl;
 
 

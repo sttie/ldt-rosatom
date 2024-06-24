@@ -574,6 +574,21 @@ std::pair<float, std::vector<PDPPoint>> PathManager::TimeToSail(const Caravan& c
 
     const auto old_cur_time = cur_time;
 
+    // изменяем все cur_pos в караване
+    std::vector<std::pair<ShipId, VertID>> old_ships_cur_pos;
+    std::pair<IcebreakerId, VertID> old_icebreaker_cur_pos = std::make_pair(icebreaker.id, icebreaker.cur_pos);
+    {
+        auto last_voyage = getCurrentVoyage(caravan);
+        if (last_voyage.start_time != 0) {
+            for (auto ship_id : caravan.ships_id) {
+                old_ships_cur_pos.push_back(std::make_pair(ship_id, (*ships)[ship_id.id].cur_pos));
+                (*ships)[ship_id.id].cur_pos = last_voyage.end_point;
+            }
+            (*icebreakers)[icebreaker.id.id].cur_pos = last_voyage.end_point;
+            cur_time = last_voyage.end_time;
+        }
+    }
+
     auto process_points = [this](const Icebreaker& icebreaker, const std::vector<PDPPoint>& points) {
         const Ship* min_speed_ship = nullptr;
         auto min_speed = icebreaker.speed;
@@ -611,24 +626,62 @@ std::pair<float, std::vector<PDPPoint>> PathManager::TimeToSail(const Caravan& c
     do {
         auto [time, points_sequence] = process_points(icebreaker, points);
         if (time < optimal_time) {
-            time = optimal_time;
+            optimal_time = time;
             optimal_points = std::move(points_sequence);
         }
         cur_time = old_cur_time;
     } while (std::next_permutation(points.begin(), points.end()));
 
+    // восстанавливаем положения судов в караване
+    {
+        (*icebreakers)[old_icebreaker_cur_pos.first.id].cur_pos = old_icebreaker_cur_pos.second;
+        for (const auto& [ship_id, old_cur_pos] : old_ships_cur_pos) {
+            (*ships)[ship_id.id].cur_pos = old_cur_pos;
+        }
+    }
+
     return std::make_pair(optimal_time, optimal_points);
 }
 
-Schedule PathManager::SailPath(const Icebreaker& icebreaker, const std::vector<PDPPoint>& points) {
+Schedule PathManager::SailPath(const Icebreaker& icebreaker__, const std::vector<PDPPoint>& points) {
     Schedule schedule;
     const auto old_cur_time = cur_time;
 
+    Icebreaker icebreaker = icebreaker__;
+
     Caravan current_caravan;
     current_caravan.icebreaker_id = icebreaker.id;
+
+    // передвигаем ледокол
+    auto old_icebreaker_cur_pos = std::make_pair(icebreaker.id, icebreaker.cur_pos);
+    {
+        auto last_voyage = getCurrentVoyage(current_caravan);
+        if (last_voyage.start_time != 0) {
+            icebreaker.cur_pos = last_voyage.end_point;
+            (*icebreakers)[icebreaker.id.id].cur_pos = icebreaker.cur_pos;
+            cur_time = last_voyage.end_time;
+        }
+    }
+
     VertID current_vert = icebreaker.cur_pos;
 
     for (size_t i = 0; i < points.size(); ++i) {
+        // проверяем, могут ли корабли в караване доехать самостоятельно
+        for (auto it = current_caravan.ships_id.begin(); it != current_caravan.ships_id.end(); ) {
+            const auto& ship = ships->at(it->id);
+            auto alone_path = GetShortestPathAlone(ship, current_vert, ship.finish);
+            if (!alone_path.empty()) {
+                Caravan alone_caravan; alone_caravan.ships_id.insert(*it);
+                for (auto&& voyage : std::move(alone_path)) {
+                    schedule.push_back({alone_caravan, std::move(voyage)});
+                }
+
+                it = current_caravan.ships_id.erase(it);
+            } else {
+                ++it;
+            }
+        }
+
         auto shortest_voyages = GetShortestPathForCaravan(current_caravan, current_vert, points[i].vertex);
         for (auto voyage : std::move(shortest_voyages)) {
             schedule.push_back({current_caravan, std::move(voyage)});
@@ -640,6 +693,8 @@ Schedule PathManager::SailPath(const Icebreaker& icebreaker, const std::vector<P
 
         current_vert = points[i].vertex;
     }
+
+    (*icebreakers)[old_icebreaker_cur_pos.first.id].cur_pos = old_icebreaker_cur_pos.second;
 
     cur_time = old_cur_time;
     return schedule;
@@ -691,4 +746,11 @@ std::vector<Voyage> PathManager::GetShortestPathForCaravan(const Caravan& carava
     cur_time = old_cur_time;
 
     return path;
+}
+
+bool PathManager::HasEdge(const Icebreaker& icebreaker, Days time, VertID from, VertID to) const {
+    size_t icebreaker_graph_index = GetIcebreakerIndexByName(icebreaker.name);
+    auto okay_date = GetCurrentOkayDateByTime(time);
+    const auto& graph = date_to_graph.at(okay_date).at(icebreaker_graph_index);
+    return boost::edge(from, to, graph).second;
 }

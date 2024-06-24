@@ -155,6 +155,8 @@ public:
         return boost::edge(from, to, graph).second;
     }
 
+    bool HasEdge(const Icebreaker& icebreaker, Days time, VertID from, VertID to) const;
+
 private:
     std::optional<VertID> GetNextVertexInShortestPath(VertID current, const Icebreaker& icebreaker, const Caravan& caravan, VertID end) const;
     std::optional<VertID> GetNextVertexInShortestPathAlone(VertID current, const Ship& ship, VertID end) const;

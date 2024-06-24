@@ -28,14 +28,46 @@ std::vector<std::pair<Voyage, bool>> BuildSortedPathForShip(const Ship& ship, co
     return path;
 }
 
-// std::vector<Voyage> BuildPathForIcebreaker() {
-//     return {};
-// }
+std::vector<Voyage> BuildSortedPathForIcebreaker(const Icebreaker& icebreaker, const Schedule& schedule) {
+    std::vector<Voyage> path;
+
+    for (const auto& atom : schedule) {
+        if (atom.caravan.icebreaker_id.has_value() && atom.caravan.icebreaker_id.value() == icebreaker.id) {
+            path.push_back(atom.edge_voyage);
+        }
+    }
+
+    std::sort(path.begin(), path.end(), [](const auto& a, const auto& b ) {
+        return a.start_time < b.start_time || (a.start_time == b.start_time && a.end_time < b.end_time);
+    });
+
+    return path;
+}
+
+void ValidateIcebreakerPath(const Icebreaker& icebreaker, const Schedule& schedule, const PathManager& pm) {
+    auto path = BuildSortedPathForIcebreaker(icebreaker, schedule);
+
+    Assert(icebreaker.cur_pos == path.front().start_point, std::ostringstream{} <<
+           "icebreaker " << icebreaker.name << "(" << icebreaker.id.id << "): start position doesn't equal to path's start point");
+    
+    auto current_voyage = path.front();
+    auto start = current_voyage.start_point;
+    auto end = current_voyage.end_point;
+
+    for (size_t i = 1; i < path.size(); ++i) {
+        Assert(pm.HasEdge(icebreaker, current_voyage.start_time, start, end), std::ostringstream{} <<
+                "no edge between start and end");
+        Assert(end == path[i].start_point, std::ostringstream{} << "no edge between current end and next start");
+
+        current_voyage = path[i];
+        start = current_voyage.start_point;
+        end = current_voyage.end_point;
+    }
+}
 
 void ValidateShipPath(const Ship& ship, const Schedule& schedule, const PathManager& pm) {
     auto path = BuildSortedPathForShip(ship, schedule);
 
-    // std::ostringstream message;
     Assert(ship.cur_pos == path.front().first.start_point, std::ostringstream{}
            << ship.name << "(" << ship.id.id << "): start position doesn't equal to path's start point");
 
@@ -53,13 +85,17 @@ void ValidateShipPath(const Ship& ship, const Schedule& schedule, const PathMana
         end = current_voyage.end_point;
     }
 
-    Assert(end == ship.finish, std::ostringstream{} << "i'm tired");
+    Assert(end == ship.finish, std::ostringstream{} <<
+            ship.name << "(" << ship.id.id << "): last path.end_point doesn't equal to ship's finish");
 }
 
 }
 
-void Validate(ShipsPtr ships, const Schedule& schedule, const PathManager& pm) {
+void Validate(ShipsPtr ships, IcebreakersPtr icebreakers, const Schedule& schedule, const PathManager& pm) {
     for (const auto& ship : *ships) {
         ValidateShipPath(ship, schedule, pm);
+    }
+    for (const auto& icebreaker : *icebreakers) {
+        ValidateIcebreakerPath(icebreaker, schedule, pm);
     }
 }
