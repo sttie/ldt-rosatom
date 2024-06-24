@@ -11,8 +11,8 @@ $(function() {
   var lat_start = 20;
   var long_start = 55;
 
-  var canvas_width = 2033.33;
-  var canvas_height = 990.66;
+  var canvas_width = 1016.665;
+  var canvas_height = 495.33;
 
   var divres = document.getElementById('res');
 
@@ -22,8 +22,8 @@ $(function() {
 
   var stageLegend = new Konva.Stage({
     container : 'legend', 
-    width : 1200,
-    height : 100,
+    width : 550,
+    height : 70,
     draggable : false
   });
   var layerLegend = new Konva.Layer();
@@ -32,35 +32,35 @@ $(function() {
 
   // port label
   layerLegend.add(new Konva.Circle({
-    x : 20,
-    y : 30,
-    radius : 15,
+    x : 10,
+    y : 20,
+    radius : 5,
     fill : 'purple',
   }));
 
   layerLegend.add(new Konva.Text({
-    x : 40,
-    y : 20,
+    x : 20,
+    y : 15,
     text : "- Порт",
     fill : 'black',
-    fontSize : 24,
+    fontSize : 12,
     fontFamily : 'Sans Serif'
   }));
 
   // vertex label
   layerLegend.add(new Konva.Circle({
-    x : 20,
-    y : 70,
-    radius : 15,
+    x : 10,
+    y : 40,
+    radius : 5,
     fill : 'orange',
   }));
 
   layerLegend.add(new Konva.Text({
-    x : 40,
-    y : 60,
+    x : 20,
+    y : 35,
     text : "- Промежуточная вершина",
     fill : 'black',
-    fontSize : 24,
+    fontSize : 12,
     fontFamily : 'Sans Serif'
   }));
 
@@ -72,125 +72,125 @@ $(function() {
 
   // green line >= 20
   layerLegend.add(new Konva.Line({
-    points : [350, 10, 390, 10],
+    points : [160, 10, 180, 10],
     stroke : 'green',
-    strokeWidth : 4,
+    strokeWidth : 2,
     lineCap : 'round'
   }));
 
   layerLegend.add(new Konva.Text({
-    x : 400,
-    y : 0,
+    x : 185,
+    y : 5,
     text : "- Ребро с проходимостью >= 20",
     fill : 'black',
-    fontSize : 24,
+    fontSize : 12,
     fontFamily : 'Sans Serif'
   }));
 
     // blue line [15, 20)
     layerLegend.add(new Konva.Line({
-      points : [350, 35, 390, 35],
+      points : [160, 25, 180, 25],
       stroke : 'blue',
-      strokeWidth : 4,
+      strokeWidth : 2,
       lineCap : 'round'
     }));
   
     layerLegend.add(new Konva.Text({
-      x : 400,
-      y : 25,
+      x : 185,
+      y : 20,
       text : "- Ребро с проходимостью [15, 20)",
       fill : 'black',
-      fontSize : 24,
+      fontSize : 12,
       fontFamily : 'Sans Serif'
     }));
 
     // yellow line [10, 15)
     layerLegend.add(new Konva.Line({
-      points : [350, 60, 390, 60],
+      points : [160, 40, 180, 40],
       stroke : 'yellow',
-      strokeWidth : 4,
+      strokeWidth : 2,
       lineCap : 'round'
     }));
   
     layerLegend.add(new Konva.Text({
-      x : 400,
-      y : 50,
+      x : 185,
+      y : 35,
       text : "- Ребро с проходимостью [10, 15)",
       fill : 'black',
-      fontSize : 24,
+      fontSize : 12,
       fontFamily : 'Sans Serif'
     }));
 
     // red line < 10
     layerLegend.add(new Konva.Line({
-      points : [350, 85, 390, 85],
+      points : [160, 55, 180, 55],
       stroke : 'red',
-      strokeWidth : 4,
+      strokeWidth : 2,
       lineCap : 'round'
     }));
   
     layerLegend.add(new Konva.Text({
-      x : 400,
-      y : 75,
+      x : 185,
+      y : 50,
       text : "- Ребро с проходимостью < 10",
       fill : 'black',
-      fontSize : 24,
+      fontSize : 12,
       fontFamily : 'Sans Serif'
     }));
 
     // icebreaker label
     layerLegend.add(new Konva.Rect({
-      x : 800,
-      y : 10,
-      width: cell_width*2, 
-      height : cell_width*2,
+      x : 370,
+      y : 5,
+      width: 10, 
+      height : 10,
       fill : 'blue'
     }));
 
     layerLegend.add(new Konva.Text({
-      x : 830,
-      y : 10,
+      x : 385,
+      y : 5,
       text : "- Ледокол",
       fill : 'black',
-      fontSize : 24,
+      fontSize : 12,
       fontFamily : 'Sans Serif'
     }));
 
     // caravan
     layerLegend.add(new Konva.Text({
-      x : 800,
-      y : 40,
+      x : 370,
+      y : 20,
       text : "{i,j,k} - Караван из i,j,k кораблей",
       fill : 'black',
-      fontSize : 24,
+      fontSize : 12,
       fontFamily : 'Sans Serif'
     }));
 
     // ship
 
     layerLegend.add(new Konva.RegularPolygon({
-      x : 810,
-      y : 85,
-      radius : cell_width * 1.5,
+      x : 375,
+      y : 45,
+      radius : 7,
       fill : "#6779ca",
       sides : 3
     }));
 
     layerLegend.add(new Konva.Text({
-      x : 807,
-      y : 73,
+      x : 373,
+      y : 39,
       text : "i",
-      fontSize: 24,
+      fontSize: 12,
       fontFamily: 'Sans Serif',
       fill: 'white',
     }));
 
     layerLegend.add(new Konva.Text({
-      x : 840,
-      y : 70,
+      x : 380,
+      y : 37,
       text : " - Корабль под номером i",
       fill : 'black',
-      fontSize : 24,
+      fontSize : 12,
       fontFamily : 'Sans Serif'
     }));
 
@@ -241,8 +241,8 @@ $(function() {
     y: 0,
     width : 9150,
     height : 4458,
-    scaleX : 0.22222,
-    scaleY : 0.22222
+    scaleX : 0.115,
+    scaleY : 0.115
   });
 
   var backgroundImg = new Image();
@@ -351,7 +351,7 @@ var colorDictCanvas = {"0" : "#ab7632",
             points: [(x1 - lat_start) * cell_width - cell_width / 2, (canvas_height) - (y1 - long_start) * cell_height - cell_width / 2,
                      (x2 - lat_start) * cell_width - cell_width / 2, (canvas_height) - (y2 - long_start) * cell_height - cell_width / 2],
             stroke: (edges[i]["type"][start_datetime] == 0 ? 'green' : (edges[i]["type"][start_datetime] == 1 ? 'blue' : (edges[i]["type"][start_datetime] == 2 ? 'yellow' : 'red'))),
-            strokeWidth: 2,
+            strokeWidth: 1,
             lineCap: 'round',
           });
           layer.add(konvaLines[i]);
@@ -369,7 +369,7 @@ var colorDictCanvas = {"0" : "#ab7632",
             x: (middle_x - lat_start) * cell_width - cell_width,
             y: (canvas_height) - (middle_y - long_start) * cell_height - cell_width,
             text: i.toString(),
-            fontSize: 5,
+            fontSize: 3,
             fontFamily: 'Sans Serif',
             fill: 'black',
           }));
@@ -383,7 +383,7 @@ var colorDictCanvas = {"0" : "#ab7632",
           layer.add(new Konva.Circle({
             x: (x - lat_start) * cell_width - cell_width / 2,
             y: (canvas_height) - (y - long_start) * cell_height - cell_width / 2,
-            radius: 5,
+            radius: 2,
             fill: ports[i]['name'] == '' ? 'orange' : 'purple',
           }));
         }
@@ -396,7 +396,7 @@ var colorDictCanvas = {"0" : "#ab7632",
               x: (x - lat_start) * cell_width ,
               y: (canvas_height) - (y - long_start) * cell_height - cell_width,
               text: ports[i]["name"],
-              fontSize: 8,
+              fontSize: 6,
               fontFamily: 'Sans Serif',
               fill: 'black',
               fontStyle : 'bold'
@@ -639,7 +639,7 @@ var colorDictCanvas = {"0" : "#ab7632",
                   x: (x - lat_start) * cell_width - cell_width,
                   y: (canvas_height) - (y - long_start) * cell_height - 2*cell_width - cell_height / 3,
                   text: "{" + result["icebreakers"][i]["path"][j]["caravan"].toString() + "}",
-                  fontSize: 14,
+                  fontSize: 8,
                   fontFamily: 'Sans Serif',
                   fill: 'black',
                   name : "objects"
@@ -664,7 +664,7 @@ var colorDictCanvas = {"0" : "#ab7632",
                     x: (x - lat_start) * cell_width - cell_width,
                     y: (canvas_height) - (y - long_start) * cell_height - 2 * cell_width - cell_height / 3,
                     text: "{" + result["icebreakers"][i]["path"][j]["caravan"].toString() + "}",
-                    fontSize: 14,
+                    fontSize: 8,
                     fontFamily: 'Sans Serif',
                     fill: 'black',
                     name : "objects"
@@ -705,7 +705,7 @@ var colorDictCanvas = {"0" : "#ab7632",
                   x: (x - lat_start) * cell_width - cell_width,
                   y: (canvas_height) - (y - long_start) * cell_height - 2*cell_width  + cell_height / 3,
                   text: i.toString(),
-                  fontSize: 14,
+                  fontSize: 6,
                   fontFamily: 'Sans Serif',
                   fill: 'white',
                   name : "objects"
@@ -729,7 +729,7 @@ var colorDictCanvas = {"0" : "#ab7632",
                     x: (x - lat_start) * cell_width - cell_width,
                     y: (canvas_height) - (y - long_start) * cell_height - 2*cell_width  + cell_height / 3,
                     text: i.toString(),
-                    fontSize: 14,
+                    fontSize: 6,
                     fontFamily: 'Sans Serif',
                     fill: 'white',
                     name : "objects"
