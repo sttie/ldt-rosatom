@@ -105,6 +105,12 @@ struct PDPPoint {
     bool operator<(const PDPPoint& other) const {
         return vertex < other.vertex;
     }
+
+    bool operator==(const PDPPoint& other) const {
+        return vertex == other.vertex &&
+                ((ship_id.has_value() && other.ship_id.has_value() && ship_id.value() == other.ship_id.value()) ||
+                 (!ship_id.has_value() && !other.ship_id.has_value()));
+    }
 };
 
 class PathManager {
@@ -143,7 +149,7 @@ public:
     std::vector<Voyage> GetShortestPathAlone(const Ship& ship, VertID start, VertID end);
 
     std::pair<float, std::vector<PDPPoint>> TimeToSail(const Caravan& caravan);
-    std::pair<Schedule, Schedule> SailPath(const Icebreaker& icebreaker, const std::vector<PDPPoint>& points);
+    std::vector<Schedule> SailPath(const Icebreaker& icebreaker, const std::vector<PDPPoint>& points);
 
     std::string GetCurrentOkayDateByTime(Days time) const;
 
