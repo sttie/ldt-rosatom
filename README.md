@@ -13,7 +13,7 @@ git submodule update --init --recursive
 ```bash
 cmake -DOPENXLSX_BUILD_TESTS=OFF .
 make
-pip install flask geopandas matplotlib pandas numpy shapely
+pip install flask geopandas matplotlib pandas numpy shapely openpyxl
 bash run.sh
 ```
 
