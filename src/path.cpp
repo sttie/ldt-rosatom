@@ -188,10 +188,12 @@ float PathManager::TimeToArriveAlone(const Ship& ship, VertID start, VertID end)
     );
 }
 
-PathManager::PathManager(DatesToIceGraph date_to_graph_, std::shared_ptr<Icebreakers> icebreakers, std::shared_ptr<Ships> ships)
+PathManager::PathManager(DatesToIceGraph date_to_graph_, std::shared_ptr<Icebreakers> icebreakers, std::shared_ptr<Ships> ships,
+                         size_t MAX_SHIPS_IN_CARAVAN)
     : date_to_graph(std::move(date_to_graph_))
     , icebreakers(std::move(icebreakers))
     , ships(std::move(ships))
+    , MAX_SHIPS_IN_CARAVAN(MAX_SHIPS_IN_CARAVAN)
 {
     std::vector<std::thread> threads;
     std::mutex date_to_distances_mutex;
@@ -643,8 +645,8 @@ std::pair<float, std::vector<PDPPoint>> PathManager::TimeToSail(const Caravan& c
     return std::make_pair(optimal_time, optimal_points);
 }
 
-Schedule PathManager::SailPath(const Icebreaker& icebreaker__, const std::vector<PDPPoint>& points) {
-    Schedule schedule;
+std::pair<Schedule, Schedule> PathManager::SailPath(const Icebreaker& icebreaker__, const std::vector<PDPPoint>& points) {
+    Schedule schedule_icebreaker, schedule_alone;
     const auto old_cur_time = cur_time;
 
     Icebreaker icebreaker = icebreaker__;
@@ -673,7 +675,7 @@ Schedule PathManager::SailPath(const Icebreaker& icebreaker__, const std::vector
             if (!alone_path.empty()) {
                 Caravan alone_caravan; alone_caravan.ships_id.insert(*it);
                 for (auto&& voyage : std::move(alone_path)) {
-                    schedule.push_back({alone_caravan, std::move(voyage)});
+                    schedule_alone.push_back({alone_caravan, std::move(voyage)});
                 }
 
                 it = current_caravan.ships_id.erase(it);
@@ -684,7 +686,7 @@ Schedule PathManager::SailPath(const Icebreaker& icebreaker__, const std::vector
 
         auto shortest_voyages = GetShortestPathForCaravan(current_caravan, current_vert, points[i].vertex);
         for (auto voyage : std::move(shortest_voyages)) {
-            schedule.push_back({current_caravan, std::move(voyage)});
+            schedule_icebreaker.push_back({current_caravan, std::move(voyage)});
         }
 
         if (points[i].ship_id.has_value()) {
@@ -697,7 +699,7 @@ Schedule PathManager::SailPath(const Icebreaker& icebreaker__, const std::vector
     (*icebreakers)[old_icebreaker_cur_pos.first.id].cur_pos = old_icebreaker_cur_pos.second;
 
     cur_time = old_cur_time;
-    return schedule;
+    return std::make_pair(schedule_icebreaker, schedule_alone);
 }
 
 std::vector<Voyage> PathManager::GetShortestPathForCaravan(const Caravan& caravan, VertID start, VertID end) {

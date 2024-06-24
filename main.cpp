@@ -101,7 +101,13 @@ int main(int argc, char* argv[]) {
     }
 
     // /** Алгоритм **/
-    PathManager pm(std::move(graph), icebreakers, ships);
+    int MAX_SHIPS_IN_CARAVAN = std::stoi(argv[3]);
+    if (MAX_SHIPS_IN_CARAVAN < 0) {
+        std::cout << "max ships in caravan cannot be less than 0" << std::endl;
+        exit(-1);
+    }
+
+    PathManager pm(std::move(graph), icebreakers, ships, MAX_SHIPS_IN_CARAVAN);
 
     double sum;
 
