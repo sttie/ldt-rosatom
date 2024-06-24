@@ -759,8 +759,10 @@ std::pair<float, std::vector<PDPPoint>> PathManager::TimeToSail(const Caravan& c
 //     return std::make_pair(optimal_time, optimal_points);
 // }
 
-std::pair<Schedule, Schedule> PathManager::SailPath(const Icebreaker& icebreaker__, const std::vector<PDPPoint>& points) {
-    Schedule schedule_icebreaker, schedule_alone;
+std::vector<Schedule> PathManager::SailPath(const Icebreaker& icebreaker__, const std::vector<PDPPoint>& points) {
+    std::vector<Schedule> schedules;
+    schedules.resize(1);
+
     const auto old_cur_time = cur_time;
 
     Icebreaker icebreaker = icebreaker__;
@@ -787,6 +789,9 @@ std::pair<Schedule, Schedule> PathManager::SailPath(const Icebreaker& icebreaker
             const auto& ship = ships->at(it->id);
             auto alone_path = GetShortestPathAlone(ship, current_vert, ship.finish);
             if (!alone_path.empty()) {
+                schedules.push_back({});
+                auto& schedule_alone = schedules.back();
+
                 Caravan alone_caravan; alone_caravan.ships_id.insert(*it);
                 for (auto&& voyage : std::move(alone_path)) {
                     schedule_alone.push_back({alone_caravan, std::move(voyage)});
@@ -800,7 +805,7 @@ std::pair<Schedule, Schedule> PathManager::SailPath(const Icebreaker& icebreaker
 
         auto shortest_voyages = GetShortestPathForCaravan(current_caravan, current_vert, points[i].vertex);
         for (auto voyage : std::move(shortest_voyages)) {
-            schedule_icebreaker.push_back({current_caravan, std::move(voyage)});
+            schedules[0].push_back({current_caravan, std::move(voyage)});
         }
 
         if (shortest_voyages.size() > 0) {
@@ -817,7 +822,7 @@ std::pair<Schedule, Schedule> PathManager::SailPath(const Icebreaker& icebreaker
     (*icebreakers)[old_icebreaker_cur_pos.first.id].cur_pos = old_icebreaker_cur_pos.second;
 
     cur_time = old_cur_time;
-    return std::make_pair(schedule_icebreaker, schedule_alone);
+    return schedules;
 }
 
 std::vector<Voyage> PathManager::GetShortestPathForCaravan(const Caravan& caravan, VertID start, VertID end) {
