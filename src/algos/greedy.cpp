@@ -9,8 +9,8 @@ const double score_threshold = 0.2;
 
 float weightShipAlone(const Ship &ship, const Days &cur_time, float max_speed, double cur_max_waiting_time) {
     float
-        w1 = 0.1, speed_coef = ship.speed / max_speed,
-        w2 = 0.2, waiting_coef = cur_max_waiting_time != 0 ? (cur_time - ship.voyage_start_date) / cur_max_waiting_time : 0;
+        w1 = 0.0, speed_coef = ship.speed / max_speed,
+        w2 = 0.1, waiting_coef = cur_max_waiting_time != 0 ? (cur_time - ship.voyage_start_date) / cur_max_waiting_time : 0;
     return w1 * speed_coef + w2 * waiting_coef;
 }
 
