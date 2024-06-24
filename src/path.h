@@ -143,7 +143,7 @@ public:
     std::vector<Voyage> GetShortestPathAlone(const Ship& ship, VertID start, VertID end);
 
     std::pair<float, std::vector<PDPPoint>> TimeToSail(const Caravan& caravan);
-    Schedule SailPath(const Icebreaker& icebreaker, const std::vector<PDPPoint>& points);
+    std::pair<Schedule, Schedule> SailPath(const Icebreaker& icebreaker, const std::vector<PDPPoint>& points);
 
     std::string GetCurrentOkayDateByTime(Days time) const;
 
